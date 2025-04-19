@@ -12,6 +12,8 @@ import NotFound from "./pages/NotFound";
 import Index from "./pages/Index";
 import Surveys from "./pages/Surveys";
 import Scheduling from "./pages/Scheduling";
+import SchedulingDetail from "./pages/SchedulingDetail";
+import SchedulingPreview from "./pages/SchedulingPreview";
 import Profile from "./pages/Profile";
 
 const queryClient = new QueryClient();
@@ -30,6 +32,8 @@ const App = () => (
           <Route path="/surveys/create" element={<SurveyCreate />} />
           <Route path="/scheduling" element={<Scheduling />} />
           <Route path="/scheduling/create" element={<SchedulingCreate />} />
+          <Route path="/scheduling/:id" element={<SchedulingDetail />} />
+          <Route path="/scheduling/:id/preview" element={<SchedulingPreview />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
@@ -39,4 +43,3 @@ const App = () => (
 );
 
 export default App;
-

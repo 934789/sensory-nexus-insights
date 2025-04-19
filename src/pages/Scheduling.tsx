@@ -1,9 +1,10 @@
 
 import { useNavigate } from "react-router-dom";
-import { PlusCircle, Calendar } from "lucide-react";
+import { PlusCircle, Calendar, Link as LinkIcon } from "lucide-react";
 import { Navbar } from "@/components/layout/navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useToast } from "@/components/ui/use-toast";
 
 // Dummy data for scheduling
 const schedulingData = [
@@ -38,9 +39,18 @@ const schedulingData = [
 
 export default function Scheduling() {
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const handleCreateScheduling = () => {
     navigate("/scheduling/create");
+  };
+
+  const handleCopyLink = (id: string) => {
+    navigator.clipboard.writeText(`https://sensory.app/scheduling/${id}`);
+    toast({
+      title: "Link copiado!",
+      description: "O link foi copiado para a área de transferência."
+    });
   };
 
   const getStatusBadgeClass = (status: string) => {
@@ -117,13 +127,21 @@ export default function Scheduling() {
                   </div>
                 </div>
                 
-                <div className="border-t p-4 bg-gray-50">
+                <div className="border-t p-4 bg-gray-50 flex space-x-2">
                   <Button 
                     variant="outline" 
-                    className="w-full"
+                    className="flex-1"
                     onClick={() => navigate(`/scheduling/${item.id}`)}
                   >
                     Ver Detalhes
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleCopyLink(item.id)}
+                    title="Copiar link de compartilhamento"
+                  >
+                    <LinkIcon size={16} />
                   </Button>
                 </div>
               </CardContent>
