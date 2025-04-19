@@ -39,12 +39,6 @@ export function QuestionEditorWrapper({
     return match ? parseInt(match[1]) - 1 : -1;
   };
 
-  // Get current question
-  const getCurrentQuestion = () => {
-    const index = getCurrentQuestionIndex();
-    return index >= 0 ? questions[index] : null;
-  };
-
   // Add a new question
   const handleAddQuestion = () => {
     const newQuestion: Question = {

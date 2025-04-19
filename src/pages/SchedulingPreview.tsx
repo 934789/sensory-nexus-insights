@@ -1,165 +1,345 @@
 
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Calendar, ArrowLeft } from "lucide-react";
+import { ChevronLeft, Calendar, Clock, Users, Check, X } from "lucide-react";
+import { Navbar } from "@/components/layout/navbar";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/components/ui/use-toast";
 
-// Dados fictícios para demonstração
+// Dummy data for scheduling
 const schedulingData = {
+  id: "1",
   title: "Avaliação de Iogurte - Maio 2023",
-  description: "Agendamento para teste presencial de novos sabores de iogurte",
-  location: "Laboratório Sensorial - Rua das Flores, 123 - São Paulo",
-  availableSlots: [
-    { date: "25/05/2023", time: "09:00", capacity: 10, available: 2 },
-    { date: "25/05/2023", time: "10:00", capacity: 10, available: 5 },
-    { date: "25/05/2023", time: "11:00", capacity: 10, available: 10 },
-    { date: "26/05/2023", time: "09:00", capacity: 8, available: 0 },
-    { date: "26/05/2023", time: "10:00", capacity: 8, available: 3 },
-  ]
+  description: "Agendamento para teste presencial de novos sabores de iogurte. O teste terá duração de aproximadamente 30 minutos. Local: Laboratório de Análise Sensorial, Rua das Flores, 123 - Centro.",
+  date: "25/05/2023",
+  timeSlots: [
+    { time: "09:00", capacity: 8, registered: 5 },
+    { time: "10:00", capacity: 8, registered: 8 },
+    { time: "11:00", capacity: 10, registered: 3 },
+    { time: "14:00", capacity: 10, registered: 7 },
+    { time: "15:00", capacity: 8, registered: 2 }
+  ],
+  status: "active",
+  location: "Laboratório de Análise Sensorial, Rua das Flores, 123 - Centro",
+  compensation: "R$ 50,00 em vale-compras",
+  duration: "30 minutos",
+  logoUrl: null
 };
 
 export default function SchedulingPreview() {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+  const { toast } = useToast();
+  const [selectedSlot, setSelectedSlot] = useState("");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [cpf, setCpf] = useState("");
+  const [birthdate, setBirthdate] = useState("");
+  const [gender, setGender] = useState("");
+  const [previewMode, setPreviewMode] = useState(true);
+  
+  // In a real app, we would fetch the scheduling data based on the ID
+  const scheduling = schedulingData;
 
-  const goBack = () => {
-    navigate(-1);
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
-    alert("Agendamento enviado com sucesso! Em um sistema real, os dados seriam salvos no banco de dados.");
+    
+    if (previewMode) {
+      toast({
+        title: "Modo de visualização",
+        description: "No modo de visualização, o registro não é processado. Este é apenas um preview.",
+      });
+      return;
+    }
+    
+    // In a real app, we would submit the form data to an API
+    toast({
+      title: "Participação agendada!",
+      description: "Seu agendamento foi confirmado com sucesso.",
+    });
+    
+    // Clear form
+    setSelectedSlot("");
+    setName("");
+    setEmail("");
+    setPhone("");
+    setCpf("");
+    setBirthdate("");
+    setGender("");
   };
 
-  const availableSlots = schedulingData.availableSlots.filter(slot => slot.available > 0);
+  const getAvailableSlots = () => {
+    return scheduling.timeSlots.filter(slot => slot.registered < slot.capacity);
+  };
+
+  const availableSlots = getAvailableSlots();
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <header className="bg-white shadow-sm py-4 border-b">
-        <div className="container">
-          <Button variant="ghost" onClick={goBack} className="mb-2">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Voltar
-          </Button>
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold">Visualização do Formulário</h1>
-              <p className="text-sm text-muted-foreground">
-                Pré-visualização de como o consumidor verá este agendamento
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="text-xs bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full font-medium">
-                Modo Visualização
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Navbar />
 
       <main className="flex-1 container py-8">
-        <div className="max-w-2xl mx-auto">
-          <div className="bg-white shadow-sm rounded-lg overflow-hidden border">
-            <div className="p-8">
-              <div className="flex items-center gap-3 mb-4">
-                <Calendar className="h-8 w-8 text-primary" />
-                <div>
-                  <h2 className="text-2xl font-bold">{schedulingData.title}</h2>
-                </div>
-              </div>
+        {previewMode && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 flex items-center justify-between">
+            <div>
+              <h3 className="font-medium text-blue-800">Modo de Visualização</h3>
+              <p className="text-blue-700 text-sm">Esta é uma visualização de como os consumidores verão sua página de agendamento.</p>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => navigate(`/scheduling/${id}`)}>
+                <ChevronLeft className="mr-2 h-4 w-4" />
+                Voltar para Detalhes
+              </Button>
+              <Button onClick={() => setPreviewMode(false)}>
+                Sair do Modo Preview
+              </Button>
+            </div>
+          </div>
+        )}
 
-              <div className="border-t my-6"></div>
-
-              <div className="space-y-6">
-                <div>
-                  <p className="text-gray-600 mb-4">{schedulingData.description}</p>
-                  <p className="text-sm bg-blue-50 text-blue-800 p-3 rounded-md">
-                    <strong>Local:</strong> {schedulingData.location}
-                  </p>
-                </div>
-
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="full-name">Nome Completo</Label>
-                      <Input id="full-name" placeholder="Digite seu nome completo" required />
+        <div className="grid md:grid-cols-2 gap-8">
+          <div>
+            <div className="mb-6">
+              <h1 className="text-3xl font-bold font-display">{scheduling.title}</h1>
+              <p className="text-muted-foreground mt-2">{scheduling.description}</p>
+            </div>
+            
+            <div className="space-y-6">
+              <Card>
+                <CardContent className="pt-6">
+                  <h3 className="text-lg font-medium mb-4">Informações do Teste</h3>
+                  
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-3">
+                      <Calendar className="h-5 w-5 text-primary mt-0.5" />
+                      <div>
+                        <p className="font-medium">Data</p>
+                        <p className="text-muted-foreground">{scheduling.date}</p>
+                      </div>
                     </div>
-                    <div>
-                      <Label htmlFor="cpf">CPF</Label>
-                      <Input id="cpf" placeholder="000.000.000-00" required />
+                    
+                    <div className="flex items-start gap-3">
+                      <Clock className="h-5 w-5 text-primary mt-0.5" />
+                      <div>
+                        <p className="font-medium">Duração</p>
+                        <p className="text-muted-foreground">{scheduling.duration}</p>
+                      </div>
                     </div>
-                  </div>
-
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="email">Email</Label>
-                      <Input id="email" type="email" placeholder="seu@email.com" required />
+                    
+                    <div className="flex items-start gap-3">
+                      <Users className="h-5 w-5 text-primary mt-0.5" />
+                      <div>
+                        <p className="font-medium">Localização</p>
+                        <p className="text-muted-foreground">{scheduling.location}</p>
+                      </div>
                     </div>
-                    <div>
-                      <Label htmlFor="phone">Telefone</Label>
-                      <Input id="phone" placeholder="(00) 00000-0000" required />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="birthdate">Data de Nascimento</Label>
-                    <Input id="birthdate" type="date" required />
-                  </div>
-
-                  <div className="space-y-3">
-                    <Label>Selecione um Horário Disponível</Label>
-
-                    {availableSlots.length > 0 ? (
-                      <RadioGroup value={selectedSlot || ""} onValueChange={setSelectedSlot}>
-                        <div className="space-y-2">
-                          {availableSlots.map((slot, index) => (
-                            <div 
-                              key={index}
-                              className="flex items-center space-x-2 border rounded-md p-3 hover:bg-gray-50"
-                            >
-                              <RadioGroupItem value={`${slot.date}-${slot.time}`} id={`slot-${index}`} />
-                              <Label htmlFor={`slot-${index}`} className="flex-1 cursor-pointer">
-                                <div className="flex justify-between items-center">
-                                  <div>
-                                    <span className="font-medium">{slot.date} às {slot.time}</span>
-                                  </div>
-                                  <div className="text-sm text-muted-foreground">
-                                    {slot.available} {slot.available === 1 ? "vaga disponível" : "vagas disponíveis"}
-                                  </div>
-                                </div>
-                              </Label>
-                            </div>
-                          ))}
+                    
+                    {scheduling.compensation && (
+                      <div className="flex items-start gap-3">
+                        <div className="h-5 w-5 text-primary mt-0.5 flex items-center justify-center">
+                          <span className="font-bold">R$</span>
                         </div>
-                      </RadioGroup>
-                    ) : (
-                      <div className="text-center py-8 text-muted-foreground border rounded-md">
-                        <p>Não há horários disponíveis no momento</p>
+                        <div>
+                          <p className="font-medium">Compensação</p>
+                          <p className="text-muted-foreground">{scheduling.compensation}</p>
+                        </div>
                       </div>
                     )}
                   </div>
-
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="pt-6">
+                  <h3 className="text-lg font-medium mb-4">Horários Disponíveis</h3>
+                  
+                  <div>
+                    <RadioGroup value={selectedSlot} onValueChange={setSelectedSlot}>
+                      <div className="grid grid-cols-1 gap-3">
+                        {scheduling.timeSlots.map((slot, i) => {
+                          const isFull = slot.registered >= slot.capacity;
+                          
+                          return (
+                            <div 
+                              key={i} 
+                              className={`border rounded-lg p-4 transition-colors ${
+                                selectedSlot === `${slot.time}` 
+                                  ? "border-primary bg-primary/5" 
+                                  : isFull 
+                                  ? "bg-gray-100 opacity-60 cursor-not-allowed" 
+                                  : "hover:border-primary/50 cursor-pointer"
+                              }`}
+                            >
+                              <RadioGroupItem 
+                                value={`${slot.time}`}
+                                id={`slot-${i}`}
+                                className="hidden"
+                                disabled={isFull}
+                              />
+                              <label 
+                                htmlFor={`slot-${i}`}
+                                className={`flex items-center justify-between cursor-pointer ${isFull ? "cursor-not-allowed" : ""}`}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10">
+                                    <Clock className="h-5 w-5 text-primary" />
+                                  </div>
+                                  <div>
+                                    <p className="font-medium">{slot.time}</p>
+                                    <p className="text-sm text-muted-foreground">{scheduling.date}</p>
+                                  </div>
+                                </div>
+                                
+                                <div className="flex items-center">
+                                  {isFull ? (
+                                    <span className="flex items-center text-sm text-rose-600 gap-1">
+                                      <X size={14} />
+                                      Lotado
+                                    </span>
+                                  ) : (
+                                    <>
+                                      {selectedSlot === `${slot.time}` && (
+                                        <Check className="h-5 w-5 text-primary" />
+                                      )}
+                                      <span className="text-sm text-muted-foreground ml-2">
+                                        {slot.capacity - slot.registered} vagas disponíveis
+                                      </span>
+                                    </>
+                                  )}
+                                </div>
+                              </label>
+                            </div>
+                          );
+                        })}
+                        
+                        {availableSlots.length === 0 && (
+                          <div className="text-center p-6 border rounded-lg">
+                            <p className="text-muted-foreground">Todos os horários estão lotados</p>
+                          </div>
+                        )}
+                      </div>
+                    </RadioGroup>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+          
+          <div>
+            <Card>
+              <CardContent className="pt-6">
+                <h3 className="text-lg font-medium mb-4">Dados para Agendamento</h3>
+                
+                <form onSubmit={handleRegister} className="space-y-4">
+                  <div>
+                    <Label htmlFor="name">Nome Completo</Label>
+                    <Input 
+                      id="name" 
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Digite seu nome completo"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="email">Email</Label>
+                    <Input 
+                      id="email" 
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="Digite seu email"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="phone">Telefone</Label>
+                    <Input 
+                      id="phone" 
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="(00) 00000-0000"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="cpf">CPF</Label>
+                      <Input 
+                        id="cpf" 
+                        value={cpf}
+                        onChange={(e) => setCpf(e.target.value)}
+                        placeholder="000.000.000-00"
+                        required
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="birthdate">Data de Nascimento</Label>
+                      <Input 
+                        id="birthdate" 
+                        type="date"
+                        value={birthdate}
+                        onChange={(e) => setBirthdate(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="gender">Gênero</Label>
+                    <Select value={gender} onValueChange={setGender}>
+                      <SelectTrigger id="gender">
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="female">Feminino</SelectItem>
+                        <SelectItem value="male">Masculino</SelectItem>
+                        <SelectItem value="non-binary">Não-binário</SelectItem>
+                        <SelectItem value="other">Outro</SelectItem>
+                        <SelectItem value="prefer-not-to-say">Prefiro não informar</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
                   <div className="pt-4">
-                    <Button type="submit" className="w-full" disabled={!selectedSlot}>
-                      Agendar Participação
+                    <Button 
+                      type="submit" 
+                      className="w-full"
+                      disabled={!selectedSlot}
+                    >
+                      Confirmar Agendamento
                     </Button>
+                    
+                    {!selectedSlot && (
+                      <p className="text-center text-sm text-muted-foreground mt-2">
+                        Selecione um horário disponível para continuar
+                      </p>
+                    )}
                   </div>
                 </form>
+              </CardContent>
+            </Card>
+            
+            {availableSlots.length > 0 && (
+              <div className="mt-4 text-center">
+                <p className="text-sm text-muted-foreground">
+                  {availableSlots.length} {availableSlots.length === 1 ? 'horário disponível' : 'horários disponíveis'} para agendamento.
+                </p>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </main>
-
-      <footer className="bg-white border-t p-4">
-        <div className="container text-center text-sm text-muted-foreground">
-          © 2023 SensoryNexus • Todos os direitos reservados
-        </div>
-      </footer>
     </div>
   );
 }

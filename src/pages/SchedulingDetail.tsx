@@ -1,62 +1,134 @@
 
 import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { Calendar, Clock, Users, MapPin, FileText } from "lucide-react";
+import { useParams, useNavigate } from "react-router-dom";
+import { 
+  ChevronLeft, Users, Calendar, Clock, Link as LinkIcon, 
+  ExternalLink, Edit, Trash2, Download, Mail 
+} from "lucide-react";
 import { Navbar } from "@/components/layout/navbar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/components/ui/use-toast";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
-// Dummy data for demonstration
+// Dummy data for scheduling details
 const schedulingData = {
   id: "1",
   title: "Avaliação de Iogurte - Maio 2023",
   description: "Agendamento para teste presencial de novos sabores de iogurte",
   date: "25/05/2023",
-  location: "Laboratório Sensorial - Rua das Flores, 123 - São Paulo",
   timeSlots: [
-    { time: "09:00", capacity: 10, enrolled: 8 },
-    { time: "09:30", capacity: 10, enrolled: 10 },
-    { time: "10:00", capacity: 10, enrolled: 5 },
-    { time: "10:30", capacity: 10, enrolled: 2 },
-    { time: "11:00", capacity: 10, enrolled: 0 },
+    { time: "09:00", capacity: 8, registered: 5 },
+    { time: "10:00", capacity: 8, registered: 8 },
+    { time: "11:00", capacity: 10, registered: 3 },
+    { time: "14:00", capacity: 10, registered: 7 },
+    { time: "15:00", capacity: 8, registered: 2 }
   ],
+  status: "active",
+  shareLink: "https://sensory.app/scheduling/xCvB7z",
   participants: [
-    { id: 1, name: "Ana Silva", cpf: "123.456.789-10", timeslot: "09:00", status: "confirmado" },
-    { id: 2, name: "Bruno Costa", cpf: "234.567.890-12", timeslot: "09:00", status: "confirmado" },
-    { id: 3, name: "Carla Mendes", cpf: "345.678.901-23", timeslot: "09:30", status: "confirmado" },
-    { id: 4, name: "Daniel Oliveira", cpf: "456.789.012-34", timeslot: "10:00", status: "confirmado" },
-    { id: 5, name: "Ellen Souza", cpf: "567.890.123-45", timeslot: "10:00", status: "cancelado" },
-  ],
-  status: "active"
+    { id: 1, name: "Ana Maria", email: "ana@email.com", slot: "09:00", status: "confirmed" },
+    { id: 2, name: "Carlos Silva", email: "carlos@email.com", slot: "09:00", status: "confirmed" },
+    { id: 3, name: "Mariana Costa", email: "mariana@email.com", slot: "09:00", status: "confirmed" },
+    { id: 4, name: "João Paulo", email: "joao@email.com", slot: "09:00", status: "confirmed" },
+    { id: 5, name: "Fernanda Lima", email: "fernanda@email.com", slot: "09:00", status: "confirmed" },
+    { id: 6, name: "Roberto Alves", email: "roberto@email.com", slot: "10:00", status: "confirmed" },
+    { id: 7, name: "Juliana Mendes", email: "juliana@email.com", slot: "10:00", status: "confirmed" },
+    { id: 8, name: "Ricardo Santos", email: "ricardo@email.com", slot: "10:00", status: "confirmed" },
+    { id: 9, name: "Patricia Gomes", email: "patricia@email.com", slot: "10:00", status: "confirmed" },
+    { id: 10, name: "Marcelo Dias", email: "marcelo@email.com", slot: "10:00", status: "confirmed" },
+    { id: 11, name: "Luciana Costa", email: "luciana@email.com", slot: "10:00", status: "confirmed" },
+    { id: 12, name: "Fernando Sousa", email: "fernando@email.com", slot: "10:00", status: "confirmed" },
+    { id: 13, name: "Aline Ferreira", email: "aline@email.com", slot: "10:00", status: "confirmed" },
+    { id: 14, name: "Gabriel Lima", email: "gabriel@email.com", slot: "11:00", status: "confirmed" },
+    { id: 15, name: "Carolina Santos", email: "carolina@email.com", slot: "11:00", status: "confirmed" },
+    { id: 16, name: "Rodrigo Alves", email: "rodrigo@email.com", slot: "11:00", status: "confirmed" },
+    { id: 17, name: "Bianca Martins", email: "bianca@email.com", slot: "14:00", status: "confirmed" },
+    { id: 18, name: "Leonardo Costa", email: "leonardo@email.com", slot: "14:00", status: "confirmed" },
+    { id: 19, name: "Amanda Silva", email: "amanda@email.com", slot: "14:00", status: "confirmed" },
+    { id: 20, name: "Felipe Oliveira", email: "felipe@email.com", slot: "14:00", status: "confirmed" },
+    { id: 21, name: "Tatiana Rocha", email: "tatiana@email.com", slot: "14:00", status: "confirmed" },
+    { id: 22, name: "Guilherme Nunes", email: "guilherme@email.com", slot: "14:00", status: "confirmed" },
+    { id: 23, name: "Renata Dias", email: "renata@email.com", slot: "14:00", status: "confirmed" },
+    { id: 24, name: "Bruno Mendes", email: "bruno@email.com", slot: "15:00", status: "confirmed" },
+    { id: 25, name: "Sabrina Lima", email: "sabrina@email.com", slot: "15:00", status: "confirmed" }
+  ]
 };
 
 export default function SchedulingDetail() {
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { id } = useParams();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("overview");
   
+  // In a real app, we would fetch the scheduling data based on the ID
+  // const scheduling = useQuery(`scheduling-${id}`, () => fetchSchedulingById(id));
+  const scheduling = schedulingData;
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(scheduling.shareLink);
+    toast({
+      title: "Link copiado!",
+      description: "O link foi copiado para a área de transferência.",
+    });
+  };
+
+  const handlePreviewScheduling = () => {
+    navigate(`/scheduling/${id}/preview`);
+  };
+
+  const handleEditScheduling = () => {
+    navigate(`/scheduling/edit/${id}`);
+  };
+
+  const handleDeleteScheduling = () => {
+    // In a real app, we would show a confirmation dialog
+    toast({
+      title: "Agendamento excluído",
+      description: "O agendamento foi excluído com sucesso.",
+    });
+    navigate("/scheduling");
+  };
+
+  const handleSendReminders = () => {
+    toast({
+      title: "Lembretes enviados",
+      description: "Os lembretes foram enviados para todos os participantes.",
+    });
+  };
+
+  const handleExportParticipants = () => {
+    toast({
+      title: "Lista exportada",
+      description: "A lista de participantes foi exportada com sucesso.",
+    });
+  };
+
   const getStatusBadgeClass = (status: string) => {
     switch (status) {
-      case "confirmado":
+      case "active":
         return "bg-green-100 text-green-800";
-      case "cancelado":
-        return "bg-red-100 text-red-800";
+      case "upcoming":
+        return "bg-blue-100 text-blue-800";
+      case "completed":
+        return "bg-gray-100 text-gray-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
   };
 
-  const handleShareLink = () => {
-    navigator.clipboard.writeText(`https://sensory.app/scheduling/${id}`);
-    // Idealmente usaríamos um toast aqui
-    alert("Link copiado para a área de transferência!");
-  };
-
-  const handlePreviewForm = () => {
-    // Em produção, isso abriria em uma nova aba ou modal
-    navigate(`/scheduling/${id}/preview`);
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case "active":
+        return "Ativo";
+      case "upcoming":
+        return "Futuro";
+      case "completed":
+        return "Concluído";
+      default:
+        return status;
+    }
   };
 
   return (
@@ -64,153 +136,237 @@ export default function SchedulingDetail() {
       <Navbar />
 
       <main className="flex-1 container py-8">
-        <div className="mb-6">
-          <Button 
-            variant="ghost" 
-            onClick={() => navigate("/scheduling")}
-            className="mb-4"
-          >
-            ← Voltar para Agendamentos
+        <div className="mb-8">
+          <Button variant="ghost" onClick={() => navigate("/scheduling")} className="mb-4">
+            <ChevronLeft className="mr-2 h-4 w-4" />
+            Voltar para Agendamentos
           </Button>
           
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold font-display">{schedulingData.title}</h1>
-              <p className="text-muted-foreground">{schedulingData.description}</p>
+              <div className="flex items-center gap-2">
+                <h1 className="text-3xl font-bold font-display">{scheduling.title}</h1>
+                <span className={`text-xs px-2 py-1 rounded-full ${getStatusBadgeClass(scheduling.status)}`}>
+                  {getStatusText(scheduling.status)}
+                </span>
+              </div>
+              <p className="text-muted-foreground">{scheduling.description}</p>
             </div>
             
             <div className="flex gap-2">
-              <Button variant="outline" onClick={handleShareLink}>
+              <Button variant="outline" onClick={handleCopyLink} className="flex items-center gap-1">
+                <LinkIcon size={16} />
                 Copiar Link
               </Button>
-              <Button variant="outline" onClick={handlePreviewForm}>
-                Visualizar Formulário
+              
+              <Button variant="outline" onClick={handlePreviewScheduling} className="flex items-center gap-1">
+                <ExternalLink size={16} />
+                Visualizar
               </Button>
-              <Button>Editar Agendamento</Button>
+              
+              <Button variant="outline" onClick={handleEditScheduling} className="flex items-center gap-1">
+                <Edit size={16} />
+                Editar
+              </Button>
             </div>
           </div>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-6">
-            <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-            <TabsTrigger value="participants">Participantes</TabsTrigger>
-            <TabsTrigger value="settings">Configurações</TabsTrigger>
-          </TabsList>
+        <div className="grid md:grid-cols-3 gap-8">
+          <div className="md:col-span-2">
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="mb-6">
+                <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+                <TabsTrigger value="participants">Participantes</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="overview" className="space-y-6">
+                <Card>
+                  <CardContent className="pt-6">
+                    <h3 className="text-lg font-medium mb-4">Horários e Vagas</h3>
+                    
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-3 gap-4">
+                        {scheduling.timeSlots.map((slot, index) => (
+                          <Card key={index} className="p-4">
+                            <div className="flex flex-col items-center">
+                              <Clock className="h-6 w-6 text-primary mb-2" />
+                              <p className="text-lg font-medium">{slot.time}</p>
+                              <p className="text-sm text-muted-foreground">{scheduling.date}</p>
+                              <div className="mt-2 flex items-center">
+                                <Users className="h-4 w-4 mr-1 text-muted-foreground" />
+                                <span className="text-sm">
+                                  {slot.registered}/{slot.capacity} vagas preenchidas
+                                </span>
+                              </div>
+                            </div>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardContent className="pt-6">
+                    <h3 className="text-lg font-medium mb-4">Estatísticas</h3>
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="bg-white p-4 rounded-lg border text-center">
+                        <p className="text-muted-foreground text-sm">Total de Vagas</p>
+                        <p className="text-2xl font-semibold">
+                          {scheduling.timeSlots.reduce((acc, slot) => acc + slot.capacity, 0)}
+                        </p>
+                      </div>
+                      
+                      <div className="bg-white p-4 rounded-lg border text-center">
+                        <p className="text-muted-foreground text-sm">Participantes</p>
+                        <p className="text-2xl font-semibold">
+                          {scheduling.timeSlots.reduce((acc, slot) => acc + slot.registered, 0)}
+                        </p>
+                      </div>
+                      
+                      <div className="bg-white p-4 rounded-lg border text-center">
+                        <p className="text-muted-foreground text-sm">Taxa de Ocupação</p>
+                        <p className="text-2xl font-semibold">
+                          {Math.round((scheduling.timeSlots.reduce((acc, slot) => acc + slot.registered, 0) / 
+                            scheduling.timeSlots.reduce((acc, slot) => acc + slot.capacity, 0)) * 100)}%
+                        </p>
+                      </div>
+                      
+                      <div className="bg-white p-4 rounded-lg border text-center">
+                        <p className="text-muted-foreground text-sm">Horários</p>
+                        <p className="text-2xl font-semibold">{scheduling.timeSlots.length}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+              
+              <TabsContent value="participants" className="space-y-6">
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-lg font-medium">Lista de Participantes</h3>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={handleSendReminders} className="flex items-center gap-1">
+                          <Mail size={16} />
+                          <span>Enviar Lembretes</span>
+                        </Button>
+                        
+                        <Button variant="outline" size="sm" onClick={handleExportParticipants} className="flex items-center gap-1">
+                          <Download size={16} />
+                          <span>Exportar Lista</span>
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <div className="border rounded-lg overflow-hidden">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead className="bg-gray-50 text-gray-600">
+                            <tr>
+                              <th className="px-6 py-3 text-left">Nome</th>
+                              <th className="px-6 py-3 text-left">Email</th>
+                              <th className="px-6 py-3 text-left">Horário</th>
+                              <th className="px-6 py-3 text-left">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-200">
+                            {scheduling.participants.map((participant) => (
+                              <tr key={participant.id} className="bg-white">
+                                <td className="px-6 py-4 flex items-center gap-2">
+                                  <Avatar className="h-8 w-8">
+                                    <AvatarFallback>{participant.name.charAt(0)}</AvatarFallback>
+                                  </Avatar>
+                                  <span>{participant.name}</span>
+                                </td>
+                                <td className="px-6 py-4">{participant.email}</td>
+                                <td className="px-6 py-4">{participant.slot}</td>
+                                <td className="px-6 py-4">
+                                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
+                                    Confirmado
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          </div>
           
-          <TabsContent value="overview" className="space-y-6">
-            <div className="grid gap-6 md:grid-cols-2">
+          <div>
+            <div className="space-y-6">
               <Card>
-                <CardHeader>
-                  <CardTitle>Informações do Agendamento</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex gap-2">
-                    <Calendar className="h-5 w-5 text-muted-foreground" />
-                    <span>Data: {schedulingData.date}</span>
-                  </div>
+                <CardContent className="pt-6">
+                  <h3 className="text-lg font-medium mb-4">Compartilhamento</h3>
                   
-                  <div className="flex gap-2">
-                    <MapPin className="h-5 w-5 text-muted-foreground" />
-                    <span>Local: {schedulingData.location}</span>
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    <Users className="h-5 w-5 text-muted-foreground" />
-                    <span>Total de participantes: {schedulingData.participants.filter(p => p.status === "confirmado").length}</span>
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    <FileText className="h-5 w-5 text-muted-foreground" />
-                    <span>Horários disponíveis: {schedulingData.timeSlots.filter(slot => slot.enrolled < slot.capacity).length}</span>
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Input value={scheduling.shareLink} readOnly />
+                      <Button variant="outline" onClick={handleCopyLink}>
+                        <LinkIcon className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    
+                    <div>
+                      <Button variant="outline" className="w-full" onClick={handlePreviewScheduling}>
+                        Visualizar Página de Inscrição
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
               
               <Card>
-                <CardHeader>
-                  <CardTitle>Estatísticas de Preenchimento</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {schedulingData.timeSlots.map((slot, index) => (
-                      <div key={index} className="space-y-1">
-                        <div className="flex justify-between items-center">
-                          <div className="flex gap-2 items-center">
-                            <Clock className="h-4 w-4 text-muted-foreground" />
-                            <span>{slot.time}</span>
-                          </div>
-                          <span className="text-sm">{slot.enrolled}/{slot.capacity} vagas</span>
-                        </div>
-                        <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-primary rounded-full"
-                            style={{ width: `${(slot.enrolled / slot.capacity) * 100}%` }}
-                          ></div>
-                        </div>
-                        
-                        {slot.enrolled >= slot.capacity && (
-                          <p className="text-xs text-destructive">Horário esgotado</p>
-                        )}
-                      </div>
-                    ))}
+                <CardContent className="pt-6">
+                  <h3 className="text-lg font-medium mb-4">Datas</h3>
+                  
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Data:</span>
+                      <span>{scheduling.date}</span>
+                    </div>
+                    
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Horários:</span>
+                      <span>{scheduling.timeSlots.length}</span>
+                    </div>
+                    
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Status:</span>
+                      <span className={`px-2 py-0.5 rounded-full text-xs ${getStatusBadgeClass(scheduling.status)}`}>
+                        {getStatusText(scheduling.status)}
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="border-red-200">
+                <CardContent className="pt-6">
+                  <h3 className="text-lg font-medium mb-4 text-red-600">Zona de Perigo</h3>
+                  
+                  <div className="space-y-2">
+                    <Button 
+                      variant="destructive" 
+                      className="w-full flex items-center justify-center gap-2"
+                      onClick={handleDeleteScheduling}
+                    >
+                      <Trash2 size={16} />
+                      <span>Excluir Agendamento</span>
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
             </div>
-          </TabsContent>
-          
-          <TabsContent value="participants">
-            <Card>
-              <CardHeader>
-                <CardTitle>Lista de Participantes</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="rounded-md border">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CPF</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Horário</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {schedulingData.participants.map((participant) => (
-                        <tr key={participant.id}>
-                          <td className="px-6 py-4 whitespace-nowrap">{participant.name}</td>
-                          <td className="px-6 py-4 whitespace-nowrap">{participant.cpf}</td>
-                          <td className="px-6 py-4 whitespace-nowrap">{participant.timeslot}</td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <Badge className={getStatusBadgeClass(participant.status)}>
-                              {participant.status === "confirmado" ? "Confirmado" : "Cancelado"}
-                            </Badge>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <Button variant="ghost" size="sm">Detalhes</Button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="settings">
-            <Card>
-              <CardHeader>
-                <CardTitle>Configurações do Agendamento</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p>Configurações adicionais serão implementadas em breve.</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+          </div>
+        </div>
       </main>
     </div>
   );

@@ -15,6 +15,7 @@ import Scheduling from "./pages/Scheduling";
 import SchedulingDetail from "./pages/SchedulingDetail";
 import SchedulingPreview from "./pages/SchedulingPreview";
 import Profile from "./pages/Profile";
+import RecruiterProfile from "./pages/RecruiterProfile";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +36,7 @@ const App = () => (
           <Route path="/scheduling/:id" element={<SchedulingDetail />} />
           <Route path="/scheduling/:id/preview" element={<SchedulingPreview />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/recruiter-profile" element={<RecruiterProfile />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
