@@ -38,7 +38,7 @@ export function ConcordanceQuestion({
                 <Input 
                   placeholder="Código" 
                   value={statement.code}
-                  onChange={(e) => onCodeChange(statement.id, e.target.code)}
+                  onChange={(e) => onCodeChange(statement.id, e.target.value)}
                 />
               </div>
               <Button 

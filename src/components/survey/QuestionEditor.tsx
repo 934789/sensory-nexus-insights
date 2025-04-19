@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,7 +11,6 @@ import { RankingQuestion } from "./question-types/RankingQuestion";
 import { SaveTemplateDialog } from "./template-bank";
 import { cn } from "@/lib/utils";
 
-// Tipos de perguntas disponíveis
 const QUESTION_TYPES = [
   { id: 'single', label: 'Única Escolha' },
   { id: 'multiple', label: 'Múltipla Escolha' },
@@ -27,10 +25,8 @@ const QUESTION_TYPES = [
   { id: 'ranking', label: 'Ranqueamento' }
 ];
 
-// Tipos que utilizam imagem
 const IMAGE_TYPES = ['single_image', 'multiple_image', 'text_image', 'scale_image'];
 
-// Tipos que utilizam opções
 const OPTIONS_TYPES = ['single', 'multiple', 'single_image', 'multiple_image', 'concordance', 'ranking'];
 
 interface QuestionOption {
@@ -71,7 +67,6 @@ interface QuestionEditorProps {
 }
 
 export function QuestionEditor({ question, onQuestionChange, onSaveTemplate }: QuestionEditorProps) {
-  // Funções para atualizar a pergunta
   const handleTextChange = (text: string) => {
     onQuestionChange({ ...question, text });
   };
@@ -80,7 +75,6 @@ export function QuestionEditor({ question, onQuestionChange, onSaveTemplate }: Q
     onQuestionChange({ 
       ...question, 
       type,
-      // Reset options if changing to a non-option type
       options: OPTIONS_TYPES.includes(type) ? question.options : []
     });
   };
@@ -116,12 +110,10 @@ export function QuestionEditor({ question, onQuestionChange, onSaveTemplate }: Q
     });
   };
 
-  // Tratamento para perguntas com imagem
   const handleImageChange = (questionImage: string | null) => {
     onQuestionChange({ ...question, questionImage });
   };
 
-  // Tratamento para perguntas de concordância
   const handleAddStatement = () => {
     const statements = question.statements || [];
     onQuestionChange({
@@ -158,7 +150,6 @@ export function QuestionEditor({ question, onQuestionChange, onSaveTemplate }: Q
     });
   };
 
-  // Tratamento para perguntas com vídeo
   const handleVideoUrlChange = (videoUrl: string) => {
     onQuestionChange({ ...question, videoUrl });
   };
@@ -167,7 +158,6 @@ export function QuestionEditor({ question, onQuestionChange, onSaveTemplate }: Q
     onQuestionChange({ ...question, videoFile });
   };
 
-  // Tratamento para perguntas de ranqueamento
   const handleAddRankOption = () => {
     const rankOptions = question.rankOptions || [];
     onQuestionChange({
@@ -204,7 +194,6 @@ export function QuestionEditor({ question, onQuestionChange, onSaveTemplate }: Q
     });
   };
 
-  // Inicialização de novos tipos de pergunta quando são selecionados
   const initializeQuestionTypeData = (type: string) => {
     let updates = {};
     
@@ -236,9 +225,7 @@ export function QuestionEditor({ question, onQuestionChange, onSaveTemplate }: Q
     }
   };
 
-  // Renderização condicional do editor baseado no tipo de pergunta
   const renderQuestionEditor = () => {
-    // Para tipos com imagem na pergunta
     if (IMAGE_TYPES.includes(question.type)) {
       return (
         <QuestionWithImage
@@ -247,13 +234,11 @@ export function QuestionEditor({ question, onQuestionChange, onSaveTemplate }: Q
           imageUrl={question.questionImage}
           onImageChange={handleImageChange}
         >
-          {/* Renderizar campos específicos baseados no subtipo */}
           {renderOptionsBasedOnType()}
         </QuestionWithImage>
       );
     }
     
-    // Para tipo concordância
     if (question.type === 'concordance') {
       return (
         <div className="space-y-4">
@@ -279,7 +264,6 @@ export function QuestionEditor({ question, onQuestionChange, onSaveTemplate }: Q
       );
     }
 
-    // Para tipo vídeo + pergunta
     if (question.type === 'video') {
       return (
         <div className="space-y-4">
@@ -301,13 +285,11 @@ export function QuestionEditor({ question, onQuestionChange, onSaveTemplate }: Q
             onVideoFileChange={handleVideoFileChange}
           />
           
-          {/* Renderizar campos para tipo de resposta (única escolha, múltipla, etc) */}
           {renderOptionsBasedOnType()}
         </div>
       );
     }
 
-    // Para tipo ranking
     if (question.type === 'ranking') {
       return (
         <div className="space-y-4">
@@ -328,13 +310,12 @@ export function QuestionEditor({ question, onQuestionChange, onSaveTemplate }: Q
             onRemoveOption={handleRemoveRankOption}
             onOptionChange={handleRankOptionChange}
             onCodeChange={handleRankOptionCodeChange}
-            onPositionChange={() => {}} // Será implementado para drag-and-drop
+            onPositionChange={() => {}}
           />
         </div>
       );
     }
     
-    // Para tipos básicos
     return (
       <div className="space-y-4">
         <div>
@@ -353,7 +334,6 @@ export function QuestionEditor({ question, onQuestionChange, onSaveTemplate }: Q
     );
   };
 
-  // Renderiza as opções baseadas no tipo básico (escolha única, múltipla, etc)
   const renderOptionsBasedOnType = () => {
     const baseType = question.type.replace('_image', '');
     
@@ -403,7 +383,6 @@ export function QuestionEditor({ question, onQuestionChange, onSaveTemplate }: Q
     return null;
   };
 
-  // Garantir que temos alguma opção para tipos de pergunta que necessitam
   if (OPTIONS_TYPES.includes(question.type) && (!question.options || question.options.length === 0)) {
     onQuestionChange({
       ...question,
@@ -413,6 +392,21 @@ export function QuestionEditor({ question, onQuestionChange, onSaveTemplate }: Q
       ]
     });
   }
+
+  const handleSaveTemplateClick = (template: any) => {
+    if (template.question && Array.isArray(template.question.options)) {
+      const modifiedTemplate = {
+        ...template,
+        question: {
+          ...template.question,
+          options: template.question.options.map((opt: QuestionOption) => opt.text)
+        }
+      };
+      onSaveTemplate(modifiedTemplate);
+    } else {
+      onSaveTemplate(template);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -441,15 +435,14 @@ export function QuestionEditor({ question, onQuestionChange, onSaveTemplate }: Q
 
       {renderQuestionEditor()}
 
-      {/* Template save option */}
       <div className="flex justify-end">
         <SaveTemplateDialog 
           question={{
             text: question.text,
             type: question.type,
-            options: question.options
+            options: question.options.map(opt => opt.text)
           }}
-          onSave={onSaveTemplate}
+          onSave={handleSaveTemplateClick}
         />
       </div>
     </div>
