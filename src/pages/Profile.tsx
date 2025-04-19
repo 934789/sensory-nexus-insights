@@ -87,58 +87,56 @@ export default function Profile() {
           <div>
             <Card>
               <CardContent className="p-4">
-                <Tabs value={activeTab} orientation="vertical" onValueChange={setActiveTab} className="h-full">
-                  <TabsList className="flex flex-col items-stretch h-full bg-transparent space-y-1">
-                    <TabsTrigger 
-                      value="perfil" 
-                      className="justify-start gap-2 px-3"
-                    >
-                      <User size={16} />
-                      Perfil
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="senha" 
-                      className="justify-start gap-2 px-3"
-                    >
-                      <Key size={16} />
-                      Senha
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="estatisticas" 
-                      className="justify-start gap-2 px-3"
-                    >
-                      <BarChart size={16} />
-                      Estatísticas
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="avaliacoes" 
-                      className="justify-start gap-2 px-3"
-                    >
-                      <Star size={16} />
-                      Avaliações
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="notificacoes" 
-                      className="justify-start gap-2 px-3"
-                    >
-                      <Bell size={16} />
-                      Notificações
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="configuracoes" 
-                      className="justify-start gap-2 px-3"
-                    >
-                      <Settings size={16} />
-                      Configurações
-                    </TabsTrigger>
-                  </TabsList>
-                </Tabs>
+                <div className="flex flex-col items-stretch h-full space-y-1">
+                  <button 
+                    className={`flex items-center justify-start gap-2 px-3 py-1.5 rounded-sm text-sm font-medium ${activeTab === 'perfil' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'}`}
+                    onClick={() => setActiveTab("perfil")}
+                  >
+                    <User size={16} />
+                    Perfil
+                  </button>
+                  <button 
+                    className={`flex items-center justify-start gap-2 px-3 py-1.5 rounded-sm text-sm font-medium ${activeTab === 'senha' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'}`}
+                    onClick={() => setActiveTab("senha")}
+                  >
+                    <Key size={16} />
+                    Senha
+                  </button>
+                  <button 
+                    className={`flex items-center justify-start gap-2 px-3 py-1.5 rounded-sm text-sm font-medium ${activeTab === 'estatisticas' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'}`}
+                    onClick={() => setActiveTab("estatisticas")}
+                  >
+                    <BarChart size={16} />
+                    Estatísticas
+                  </button>
+                  <button 
+                    className={`flex items-center justify-start gap-2 px-3 py-1.5 rounded-sm text-sm font-medium ${activeTab === 'avaliacoes' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'}`}
+                    onClick={() => setActiveTab("avaliacoes")}
+                  >
+                    <Star size={16} />
+                    Avaliações
+                  </button>
+                  <button 
+                    className={`flex items-center justify-start gap-2 px-3 py-1.5 rounded-sm text-sm font-medium ${activeTab === 'notificacoes' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'}`}
+                    onClick={() => setActiveTab("notificacoes")}
+                  >
+                    <Bell size={16} />
+                    Notificações
+                  </button>
+                  <button 
+                    className={`flex items-center justify-start gap-2 px-3 py-1.5 rounded-sm text-sm font-medium ${activeTab === 'configuracoes' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'}`}
+                    onClick={() => setActiveTab("configuracoes")}
+                  >
+                    <Settings size={16} />
+                    Configurações
+                  </button>
+                </div>
               </CardContent>
             </Card>
           </div>
 
           <div>
-            <TabsContent value="perfil" className="mt-0">
+            {activeTab === "perfil" && (
               <Card>
                 <CardHeader>
                   <CardTitle>Informações Pessoais</CardTitle>
@@ -217,9 +215,9 @@ export default function Profile() {
                   </form>
                 </CardContent>
               </Card>
-            </TabsContent>
+            )}
 
-            <TabsContent value="senha" className="mt-0">
+            {activeTab === "senha" && (
               <Card>
                 <CardHeader>
                   <CardTitle>Alterar Senha</CardTitle>
@@ -243,9 +241,9 @@ export default function Profile() {
                   </form>
                 </CardContent>
               </Card>
-            </TabsContent>
+            )}
 
-            <TabsContent value="estatisticas" className="mt-0">
+            {activeTab === "estatisticas" && (
               <Card>
                 <CardHeader>
                   <CardTitle>Estatísticas do Recrutador</CardTitle>
@@ -302,9 +300,9 @@ export default function Profile() {
                   </div>
                 </CardContent>
               </Card>
-            </TabsContent>
+            )}
 
-            <TabsContent value="avaliacoes" className="mt-0">
+            {activeTab === "avaliacoes" && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
@@ -371,9 +369,9 @@ export default function Profile() {
                   </div>
                 </CardContent>
               </Card>
-            </TabsContent>
+            )}
 
-            <TabsContent value="notificacoes" className="mt-0">
+            {activeTab === "notificacoes" && (
               <Card>
                 <CardHeader>
                   <CardTitle>Preferências de Notificação</CardTitle>
@@ -382,9 +380,9 @@ export default function Profile() {
                   <p>Configurações de notificação serão implementadas em breve.</p>
                 </CardContent>
               </Card>
-            </TabsContent>
+            )}
 
-            <TabsContent value="configuracoes" className="mt-0">
+            {activeTab === "configuracoes" && (
               <Card>
                 <CardHeader>
                   <CardTitle>Configurações da Conta</CardTitle>
@@ -393,7 +391,7 @@ export default function Profile() {
                   <p>Configurações da conta serão implementadas em breve.</p>
                 </CardContent>
               </Card>
-            </TabsContent>
+            )}
           </div>
         </div>
       </main>

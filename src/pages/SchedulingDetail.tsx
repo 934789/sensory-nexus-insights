@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { 
@@ -11,8 +10,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
 
-// Dummy data for scheduling details
 const schedulingData = {
   id: "1",
   title: "Avaliação de Iogurte - Maio 2023",
@@ -62,8 +61,6 @@ export default function SchedulingDetail() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("overview");
   
-  // In a real app, we would fetch the scheduling data based on the ID
-  // const scheduling = useQuery(`scheduling-${id}`, () => fetchSchedulingById(id));
   const scheduling = schedulingData;
 
   const handleCopyLink = () => {
@@ -83,7 +80,6 @@ export default function SchedulingDetail() {
   };
 
   const handleDeleteScheduling = () => {
-    // In a real app, we would show a confirmation dialog
     toast({
       title: "Agendamento excluído",
       description: "O agendamento foi excluído com sucesso.",
