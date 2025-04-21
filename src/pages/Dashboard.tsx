@@ -165,12 +165,12 @@ export default function Dashboard() {
                 {recentSurveys.map((survey) => (
                   <SurveyCard
                     key={survey.id}
+                    id={survey.id}
                     title={survey.title}
                     description={survey.description}
                     participantCount={survey.participantCount}
                     status={survey.status}
                     date={survey.date}
-                    imageSrc={survey.imageSrc}
                     onClick={() => navigate(`/surveys/${survey.id}`)}
                   />
                 ))}
@@ -183,12 +183,12 @@ export default function Dashboard() {
                   .map((survey) => (
                     <SurveyCard
                       key={survey.id}
+                      id={survey.id}
                       title={survey.title}
                       description={survey.description}
                       participantCount={survey.participantCount}
                       status={survey.status}
                       date={survey.date}
-                      imageSrc={survey.imageSrc}
                       onClick={() => navigate(`/surveys/${survey.id}`)}
                     />
                   ))}
@@ -201,12 +201,12 @@ export default function Dashboard() {
                   .map((survey) => (
                     <SurveyCard
                       key={survey.id}
+                      id={survey.id}
                       title={survey.title}
                       description={survey.description}
                       participantCount={survey.participantCount}
                       status={survey.status}
                       date={survey.date}
-                      imageSrc={survey.imageSrc}
                       onClick={() => navigate(`/surveys/${survey.id}`)}
                     />
                   ))}

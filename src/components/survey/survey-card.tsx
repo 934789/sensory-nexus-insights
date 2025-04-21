@@ -13,7 +13,7 @@ interface SurveyCardProps {
   status: "draft" | "active" | "scheduled" | "completed" | "paused" | "finished";
   totalResponses?: number;
   targetResponses?: number;
-  participantCount?: number; // Adicionando suporte para participantCount
+  participantCount?: number;
   date?: string;
   className?: string;
   imageSrc?: string;
