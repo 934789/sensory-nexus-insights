@@ -1,69 +1,110 @@
 
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
+import { Calendar, Clock, BarChart, ChevronRight, Users } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface SurveyCardProps {
+  id: string;
   title: string;
-  description: string;
-  participantCount: number;
-  status: "active" | "paused" | "finished";
-  imageSrc?: string;
-  date: string;
-  onClick?: () => void;
+  description?: string;
+  status: "draft" | "active" | "scheduled" | "completed";
+  totalResponses: number;
+  targetResponses: number;
+  date?: string;
+  className?: string;
 }
 
-export function SurveyCard({ 
-  title, 
-  description, 
-  participantCount, 
-  status, 
-  imageSrc, 
+export function SurveyCard({
+  id,
+  title,
+  description,
+  status,
+  totalResponses,
+  targetResponses,
   date,
-  onClick
+  className
 }: SurveyCardProps) {
+  const getStatusBadge = () => {
+    switch (status) {
+      case "draft":
+        return <Badge variant="outline">Rascunho</Badge>;
+      case "active":
+        return <Badge className="bg-green-500">Ativa</Badge>;
+      case "scheduled":
+        return <Badge className="bg-blue-500">Agendada</Badge>;
+      case "completed":
+        return <Badge className="bg-purple-500">Concluída</Badge>;
+    }
+  };
+
+  const getCompletionRate = () => {
+    return Math.round((totalResponses / targetResponses) * 100);
+  };
+
   return (
-    <Card 
-      className={cn(
-        "overflow-hidden transition-all duration-200 hover:shadow-md cursor-pointer",
-        onClick ? "hover:translate-y-[-2px]" : ""
-      )}
-      onClick={onClick}
-    >
-      {imageSrc && (
-        <div className="w-full h-40 overflow-hidden">
-          <img 
-            src={imageSrc} 
-            alt={title}
-            className="w-full h-full object-cover"
-          />
-        </div>
-      )}
+    <Card className={cn("transition-all hover:border-primary", className)}>
       <CardHeader>
         <div className="flex justify-between items-start">
-          <CardTitle className="text-lg">{title}</CardTitle>
-          <Badge 
-            variant={
-              status === "active" ? "default" : 
-              status === "paused" ? "secondary" : "outline"
-            }
-            className={cn(
-              status === "active" && "bg-green-100 text-green-800 hover:bg-green-100",
-              status === "paused" && "bg-yellow-100 text-yellow-800 hover:bg-yellow-100",
-              status === "finished" && "bg-gray-100 text-gray-800 hover:bg-gray-100"
+          <div>
+            <CardTitle>{title}</CardTitle>
+            {description && (
+              <CardDescription className="mt-1 line-clamp-2">
+                {description}
+              </CardDescription>
             )}
-          >
-            {status === "active" ? "Ativa" : 
-             status === "paused" ? "Pausada" : "Finalizada"}
-          </Badge>
+          </div>
+          {getStatusBadge()}
         </div>
-        <CardDescription className="line-clamp-2">{description}</CardDescription>
       </CardHeader>
-      <CardContent className="pb-2">
-        <p className="text-sm text-muted-foreground">{participantCount} {participantCount === 1 ? "participante" : "participantes"}</p>
+      <CardContent>
+        <div className="space-y-4">
+          <div className="flex justify-between items-center text-sm">
+            <div className="flex items-center text-muted-foreground">
+              <Users className="mr-1 h-4 w-4" />
+              <span>{totalResponses} respostas</span>
+            </div>
+            {date && (
+              <div className="flex items-center text-muted-foreground">
+                <Calendar className="mr-1 h-4 w-4" />
+                <span>{date}</span>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-1.5">
+            <div className="flex justify-between text-xs">
+              <span>Progresso</span>
+              <span className="font-medium">{getCompletionRate()}%</span>
+            </div>
+            <div className="w-full bg-gray-100 rounded-full h-2">
+              <div
+                className="bg-primary h-2 rounded-full"
+                style={{ width: `${getCompletionRate()}%` }}
+              ></div>
+            </div>
+          </div>
+        </div>
       </CardContent>
-      <CardFooter className="text-xs text-muted-foreground">
-        {date}
+      <CardFooter>
+        <div className="flex justify-between w-full">
+          <Button asChild variant="outline" size="sm">
+            <Link to={`/surveys/${id}`}>
+              <span>Ver Detalhes</span>
+              <ChevronRight className="ml-1 h-4 w-4" />
+            </Link>
+          </Button>
+          {status === "active" && (
+            <Button asChild size="sm" variant="secondary">
+              <Link to={`/analytics?survey=${id}`}>
+                <BarChart className="mr-1 h-4 w-4" />
+                <span>Análises</span>
+              </Link>
+            </Button>
+          )}
+        </div>
       </CardFooter>
     </Card>
   );

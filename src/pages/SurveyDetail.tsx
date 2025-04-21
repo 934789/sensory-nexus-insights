@@ -1,356 +1,396 @@
 
-import { useParams, useNavigate } from "react-router-dom";
-import { ChevronLeft, Users, ClipboardList, CalendarDays, BarChart2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { Navbar } from "@/components/layout/navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  ChevronLeft, Share2, Calendar, Clock, Users, Check, 
+  BarChart3, FileText, Download, Edit, Eye, Trash2 
+} from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
+import { ShareSurvey } from "@/components/survey/ShareSurvey";
+import { SampleDeliveryStatus } from "@/components/delivery/SampleDeliveryStatus";
 
-// Dummy data for a specific survey
-const getSurveyById = (id: string) => {
-  const surveys = [
+// Mock data for the survey
+const mockSurvey = {
+  id: "survey1",
+  title: "Avaliação Sensorial - Produto Beta",
+  description: "Teste de sabor e textura do novo produto linha Beta",
+  status: "active",
+  type: "sensorial",
+  createdAt: "2023-05-10T10:30:00Z",
+  endDate: "2023-05-20T23:59:59Z",
+  totalResponses: 34,
+  targetResponses: 50,
+  questions: [
     {
-      id: "1",
-      title: "Análise Sensorial de Iogurte",
-      description: "Avaliação das características sensoriais de novo iogurte sabor morango",
-      participantCount: 32,
-      status: "active" as const,
-      date: "Criado em 15/04/2023",
-      imageSrc: "https://images.unsplash.com/photo-1488477181946-6428a0291777?q=80&w=500&auto=format&fit=crop",
-      details: "Este teste avalia as características sensoriais de um novo iogurte sabor morango, incluindo sabor, textura, aroma e aparência.",
-      targetAudience: "Consumidores de iogurte, idade 18-65, sem intolerância a lactose",
-      questions: [
-        {
-          type: "hedonic",
-          question: "Qual sua impressão sobre o sabor deste iogurte?",
-          options: ["1 - Desgostei extremamente", "2", "3", "4", "5 - Nem gostei nem desgostei", "6", "7", "8", "9 - Gostei extremamente"]
-        },
-        {
-          type: "multiple_choice",
-          question: "Quais características se destacam neste produto?",
-          options: ["Doçura", "Acidez", "Cremosidade", "Aroma", "Textura"]
-        },
-        {
-          type: "descriptive",
-          question: "Descreva sua experiência ao degustar este iogurte:"
-        }
-      ],
-      schedule: [
-        { date: "22/04/2023", time: "14:00 - 16:00", location: "Lab Sensorial - São Paulo", available: 10, filled: 8 },
-        { date: "23/04/2023", time: "10:00 - 12:00", location: "Lab Sensorial - São Paulo", available: 10, filled: 5 },
-        { date: "24/04/2023", time: "14:00 - 16:00", location: "Remoto (envio de amostras)", available: 20, filled: 19 }
-      ]
+      id: "q1",
+      text: "O que você achou do sabor do produto?",
+      type: "scale",
+      options: ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
     },
     {
-      id: "2",
-      title: "Teste de Embalagem - Cosméticos",
-      description: "Avaliação de nova embalagem de produtos para cuidados com a pele",
-      participantCount: 18,
-      status: "paused" as const,
-      date: "Atualizado em 10/04/2023",
-      imageSrc: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?q=80&w=500&auto=format&fit=crop",
-      details: "Este teste avalia a percepção do consumidor sobre uma nova embalagem para produtos de cuidados com a pele, incluindo usabilidade, atratividade e intenção de compra.",
-      targetAudience: "Consumidores de produtos para pele, idade 25-50, todos os gêneros",
-      questions: [
-        {
-          type: "hedonic",
-          question: "Avalie o design da embalagem:",
-          options: ["1 - Muito ruim", "2", "3", "4", "5 - Nem bom nem ruim", "6", "7", "8", "9 - Excelente"]
-        },
-        {
-          type: "multiple_choice",
-          question: "Esta embalagem parece adequada para qual tipo de produto?",
-          options: ["Premium", "Econômico", "Sustentável", "Prático", "Luxuoso"]
-        }
-      ],
-      schedule: [
-        { date: "15/04/2023", time: "14:00 - 16:00", location: "Online", available: 20, filled: 18 }
-      ]
+      id: "q2",
+      text: "Qual característica mais te agradou?",
+      type: "multiple",
+      options: ["Sabor", "Textura", "Aroma", "Aparência", "Embalagem"]
     },
     {
-      id: "3",
-      title: "Pesquisa de Sabor - Bebida Energética",
-      description: "Percepção de sabor e intenção de compra de nova bebida energética",
-      participantCount: 56,
-      status: "finished" as const,
-      date: "Finalizado em 05/04/2023",
-      imageSrc: "https://images.unsplash.com/photo-1621263764928-df1444c5e882?q=80&w=500&auto=format&fit=crop",
-      details: "Este teste avaliou a percepção de sabor e a intenção de compra de uma nova bebida energética. Foram analisados diferentes aspectos como sabor, acidez, doçura e impressão geral.",
-      targetAudience: "Consumidores de bebidas energéticas, idade 18-35",
-      questions: [
-        {
-          type: "hedonic",
-          question: "Avalie o sabor desta bebida:",
-          options: ["1 - Desgostei extremamente", "2", "3", "4", "5 - Nem gostei nem desgostei", "6", "7", "8", "9 - Gostei extremamente"]
-        },
-        {
-          type: "multiple_choice",
-          question: "Qual das seguintes características você identifica nesta bebida?",
-          options: ["Doce", "Amargo", "Ácido", "Refrescante", "Artificial"]
-        }
-      ],
-      results: {
-        averageRating: 7.2,
-        purchaseIntent: "72% dos participantes indicaram intenção de compra",
-        favoriteAttributes: ["Sabor refrescante", "Energia duradoura", "Baixas calorias"]
-      }
+      id: "q3",
+      text: "Descreva com suas palavras o que achou do produto",
+      type: "text"
     }
-  ];
-
-  return surveys.find(survey => survey.id === id);
+  ],
+  sampleDelivery: {
+    status: "in-transit",
+    trackingCode: "BR1234567890",
+    scheduledDate: "15/05/2023",
+    recipientName: "João Silva"
+  }
 };
 
 export default function SurveyDetail() {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const survey = getSurveyById(id || "");
+  const { toast } = useToast();
+  const [survey, setSurvey] = useState(mockSurvey);
+  const [activeTab, setActiveTab] = useState("overview");
+  const [isShareOpen, setIsShareOpen] = useState(false);
+  const [deliveryStatus, setDeliveryStatus] = useState(survey.sampleDelivery.status);
 
-  if (!survey) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex flex-col">
-        <Navbar />
-        <main className="flex-1 container py-8">
-          <div className="text-center mt-12">
-            <h1 className="text-2xl font-bold mb-4">Pesquisa não encontrada</h1>
-            <Button onClick={() => navigate("/surveys")}>Voltar para Pesquisas</Button>
-          </div>
-        </main>
-      </div>
-    );
-  }
+  useEffect(() => {
+    // Simulando carregamento dos dados
+    console.log(`Carregando pesquisa com ID: ${id}`);
+    // Em um caso real, aqui teria uma chamada para API
+  }, [id]);
 
-  const renderStatusBadge = (status: string) => {
-    switch (status) {
+  const handleStatusChange = (newStatus: string) => {
+    setDeliveryStatus(newStatus);
+    toast({
+      title: "Status atualizado",
+      description: `O status da amostra foi atualizado para: ${newStatus === 'delivered' ? 'Entregue' : 'Concluído'}`
+    });
+  };
+
+  const handleDelete = () => {
+    toast({
+      title: "Pesquisa excluída",
+      description: "A pesquisa foi excluída permanentemente.",
+      variant: "destructive"
+    });
+    navigate("/surveys");
+  };
+
+  const getStatusBadge = () => {
+    switch (survey.status) {
+      case "draft":
+        return <Badge variant="outline">Rascunho</Badge>;
       case "active":
         return <Badge className="bg-green-500">Ativa</Badge>;
-      case "paused":
-        return <Badge className="bg-yellow-500">Pausada</Badge>;
-      case "finished":
-        return <Badge className="bg-gray-500">Finalizada</Badge>;
+      case "scheduled":
+        return <Badge className="bg-blue-500">Agendada</Badge>;
+      case "completed":
+        return <Badge className="bg-purple-500">Concluída</Badge>;
       default:
-        return <Badge className="bg-blue-500">{status}</Badge>;
+        return <Badge variant="outline">{survey.status}</Badge>;
     }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('pt-BR', { 
+      day: '2-digit', 
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+
+  const formatProgress = () => {
+    const percentage = Math.round((survey.totalResponses / survey.targetResponses) * 100);
+    return `${percentage}% (${survey.totalResponses}/${survey.targetResponses})`;
   };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Navbar />
-
+      
       <main className="flex-1 container py-8">
-        <div className="flex items-center mb-6">
-          <Button variant="ghost" onClick={() => navigate("/surveys")} className="mr-4">
-            <ChevronLeft size={16} className="mr-1" /> Voltar
+        <div className="mb-8">
+          <Button variant="ghost" onClick={() => navigate("/surveys")} className="mb-4">
+            <ChevronLeft className="mr-2 h-4 w-4" />
+            Voltar para Pesquisas
           </Button>
-          <h1 className="text-3xl font-bold font-display">{survey.title}</h1>
-          {renderStatusBadge(survey.status)}
+          
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl font-bold font-display">{survey.title}</h1>
+                {getStatusBadge()}
+              </div>
+              <p className="text-muted-foreground mt-1">{survey.description}</p>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={() => navigate(`/surveys/create?edit=${id}`)}>
+                <Edit className="mr-2 h-4 w-4" />
+                Editar
+              </Button>
+              <Button onClick={() => setIsShareOpen(true)}>
+                <Share2 className="mr-2 h-4 w-4" />
+                Compartilhar
+              </Button>
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Sobre esta Pesquisa</CardTitle>
-                <CardDescription>{survey.date}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="aspect-video rounded-md bg-gray-100 mb-6 overflow-hidden">
-                  <img
-                    src={survey.imageSrc}
-                    alt={survey.title}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="space-y-4">
-                  <p>{survey.description}</p>
-                  <p>{survey.details}</p>
-                  <div>
-                    <h3 className="font-semibold mb-1">Público-alvo:</h3>
-                    <p>{survey.targetAudience}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Tabs defaultValue="perguntas">
-              <TabsList className="mb-4">
-                <TabsTrigger value="perguntas">Perguntas</TabsTrigger>
-                <TabsTrigger value="agenda">Agenda</TabsTrigger>
-                {survey.status === "finished" && <TabsTrigger value="resultados">Resultados</TabsTrigger>}
+          <div className="lg:col-span-2">
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="mb-6">
+                <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+                <TabsTrigger value="questions">Perguntas</TabsTrigger>
+                <TabsTrigger value="responses">Respostas</TabsTrigger>
+                <TabsTrigger value="analytics">Análise</TabsTrigger>
               </TabsList>
+              
+              <TabsContent value="overview">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">Total de Respostas</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{survey.totalResponses}</div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Meta: {survey.targetResponses}
+                      </p>
+                      <div className="mt-2 h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-primary" 
+                          style={{ width: `${Math.min((survey.totalResponses / survey.targetResponses) * 100, 100)}%` }}
+                        ></div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">Data de Criação</CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex items-center">
+                      <Calendar className="h-4 w-4 text-muted-foreground mr-2" />
+                      <div className="text-lg font-medium">{formatDate(survey.createdAt)}</div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">Data Final</CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex items-center">
+                      <Clock className="h-4 w-4 text-muted-foreground mr-2" />
+                      <div className="text-lg font-medium">{formatDate(survey.endDate)}</div>
+                    </CardContent>
+                  </Card>
+                </div>
 
-              <TabsContent value="perguntas">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Informações da Pesquisa</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <dl className="space-y-4">
+                        <div>
+                          <dt className="text-sm font-medium text-muted-foreground">ID da Pesquisa</dt>
+                          <dd className="text-sm mt-1">{id}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-sm font-medium text-muted-foreground">Tipo</dt>
+                          <dd className="text-sm mt-1 capitalize">{survey.type}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-sm font-medium text-muted-foreground">Progresso</dt>
+                          <dd className="text-sm mt-1">{formatProgress()}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-sm font-medium text-muted-foreground">Perguntas</dt>
+                          <dd className="text-sm mt-1">{survey.questions.length}</dd>
+                        </div>
+                      </dl>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Ações Rápidas</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <Button variant="outline" className="flex flex-col items-center justify-center h-20 p-2">
+                          <Eye className="h-5 w-5 mb-1" />
+                          <span className="text-xs">Visualizar</span>
+                        </Button>
+                        <Button variant="outline" className="flex flex-col items-center justify-center h-20 p-2">
+                          <Download className="h-5 w-5 mb-1" />
+                          <span className="text-xs">Exportar Dados</span>
+                        </Button>
+                        <Button variant="outline" className="flex flex-col items-center justify-center h-20 p-2">
+                          <FileText className="h-5 w-5 mb-1" />
+                          <span className="text-xs">Relatórios</span>
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          className="flex flex-col items-center justify-center h-20 p-2 text-red-500 hover:text-red-600 hover:bg-red-50 border-red-200"
+                          onClick={handleDelete}
+                        >
+                          <Trash2 className="h-5 w-5 mb-1" />
+                          <span className="text-xs">Excluir</span>
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="questions">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Questões da Pesquisa</CardTitle>
+                    <CardTitle>Perguntas da Pesquisa</CardTitle>
+                    <CardDescription>
+                      Esta pesquisa contém {survey.questions.length} perguntas.
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-6">
                       {survey.questions.map((question, index) => (
-                        <div key={index} className="border rounded-lg p-4">
-                          <div className="flex items-start gap-3">
-                            <div className="bg-primary/10 p-2 rounded-full">
-                              <ClipboardList size={18} className="text-primary" />
+                        <div key={question.id} className="border-b pb-4 last:border-0 last:pb-0">
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center justify-center bg-primary/10 h-6 w-6 rounded-full">
+                              <span className="text-xs font-medium">{index + 1}</span>
                             </div>
-                            <div>
-                              <h3 className="font-semibold mb-2">{question.question}</h3>
-                              {question.type === "hedonic" && question.options && (
-                                <div className="grid grid-cols-9 gap-1 mt-2">
-                                  {question.options.map((option, idx) => (
-                                    <div key={idx} className="text-center">
-                                      <div className={`h-8 w-8 rounded-full mx-auto mb-1 border flex items-center justify-center ${idx === 4 ? 'bg-gray-100' : ''}`}>
-                                        {option.charAt(0)}
-                                      </div>
-                                      {idx % 2 === 0 && (
-                                        <span className="text-xs">{option}</span>
-                                      )}
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                              {question.type === "multiple_choice" && question.options && (
-                                <div className="mt-2 space-y-2">
-                                  {question.options.map((option, idx) => (
-                                    <div key={idx} className="flex items-center">
-                                      <div className="h-4 w-4 rounded-full border mr-2"></div>
-                                      <span>{option}</span>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                              {question.type === "descriptive" && (
-                                <div className="mt-2 border rounded-md h-24 bg-gray-50"></div>
-                              )}
-                            </div>
+                            <h3 className="text-base font-medium">{question.text}</h3>
                           </div>
+                          <div className="mt-2 text-muted-foreground text-sm flex items-center gap-2">
+                            <Badge variant="outline">
+                              {question.type === 'scale' 
+                                ? 'Escala' 
+                                : question.type === 'multiple' 
+                                  ? 'Múltipla Escolha' 
+                                  : 'Dissertativa'}
+                            </Badge>
+                          </div>
+                          
+                          {question.type !== 'text' && (
+                            <div className="mt-3 pl-8">
+                              <p className="text-sm text-muted-foreground mb-2">Opções:</p>
+                              <div className="grid grid-cols-2 gap-2">
+                                {question.options.map((option, optIndex) => (
+                                  <div 
+                                    key={optIndex} 
+                                    className="text-sm border rounded-md p-2 bg-gray-50"
+                                  >
+                                    {option}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
                   </CardContent>
                 </Card>
               </TabsContent>
-
-              <TabsContent value="agenda">
+              
+              <TabsContent value="responses">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Agenda de Coleta</CardTitle>
+                    <CardTitle>Respostas</CardTitle>
+                    <CardDescription>
+                      {survey.totalResponses} respostas recebidas até agora.
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4">
-                      {survey.schedule?.map((slot, index) => (
-                        <div key={index} className="border rounded-lg p-4">
-                          <div className="flex flex-col md:flex-row md:items-center justify-between">
-                            <div className="flex items-start gap-3">
-                              <div className="bg-primary/10 p-2 rounded-full">
-                                <CalendarDays size={18} className="text-primary" />
-                              </div>
-                              <div>
-                                <h3 className="font-semibold">{slot.date} • {slot.time}</h3>
-                                <p className="text-muted-foreground">{slot.location}</p>
-                              </div>
-                            </div>
-                            <div className="mt-2 md:mt-0">
-                              <Badge variant="outline" className="ml-2">
-                                {slot.filled} / {slot.available} vagas
-                              </Badge>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+                    <div className="text-center py-8">
+                      <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="text-lg font-medium mb-2">Dados disponíveis no painel de análise</h3>
+                      <p className="text-muted-foreground max-w-md mx-auto mb-6">
+                        Para visualizar respostas individuais e dados agregados, acesse a aba de Análise.
+                      </p>
+                      <Button onClick={() => setActiveTab("analytics")}>
+                        <BarChart3 className="mr-2 h-4 w-4" />
+                        Ver Análises
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
               </TabsContent>
-
-              {survey.status === "finished" && (
-                <TabsContent value="resultados">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg">Resultados</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {survey.results ? (
-                        <div className="space-y-4">
-                          <div className="flex items-center gap-2">
-                            <div className="bg-primary/10 p-2 rounded-full">
-                              <BarChart2 size={18} className="text-primary" />
-                            </div>
-                            <div>
-                              <h3 className="font-semibold">Avaliação Média</h3>
-                              <div className="flex items-center gap-2 mt-1">
-                                <div className="bg-green-100 text-green-800 px-2 py-1 rounded text-sm font-medium">
-                                  {survey.results.averageRating} / 9
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div>
-                            <h3 className="font-semibold mb-1">Intenção de Compra:</h3>
-                            <p>{survey.results.purchaseIntent}</p>
-                          </div>
-
-                          <div>
-                            <h3 className="font-semibold mb-1">Atributos Favoritos:</h3>
-                            <div className="flex flex-wrap gap-2">
-                              {survey.results.favoriteAttributes.map((attr, idx) => (
-                                <Badge key={idx} variant="secondary">{attr}</Badge>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <p>Resultados não disponíveis para esta pesquisa.</p>
-                      )}
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-              )}
+              
+              <TabsContent value="analytics">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Análise dos Resultados</CardTitle>
+                    <CardDescription>
+                      Visualização de dados e insights da pesquisa.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-center py-8">
+                      <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="text-lg font-medium mb-2">Acesse o painel completo de análises</h3>
+                      <p className="text-muted-foreground max-w-md mx-auto mb-6">
+                        Utilize nosso painel de análises para explorar dados detalhados e visualizações interativas.
+                      </p>
+                      <Button onClick={() => navigate(`/analytics?survey=${id}`)}>
+                        <BarChart3 className="mr-2 h-4 w-4" />
+                        Abrir Painel Analítico
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
             </Tabs>
           </div>
 
           <div className="space-y-6">
+            {/* Status da amostra e check-in/checkout */}
+            <SampleDeliveryStatus 
+              status={deliveryStatus as any}
+              trackingCode={survey.sampleDelivery.trackingCode}
+              scheduledDate={survey.sampleDelivery.scheduledDate}
+              recipientName={survey.sampleDelivery.recipientName}
+              sampleName={`Kit de avaliação - ${survey.title}`}
+              onStatusChange={handleStatusChange}
+            />
+            
             <Card>
               <CardHeader>
-                <CardTitle>Dados da Pesquisa</CardTitle>
+                <CardTitle>Link da Pesquisa</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-primary/10 p-2 rounded-full">
-                      <Users size={18} className="text-primary" />
-                    </div>
-                    <div>
-                      <div className="text-sm text-muted-foreground">Total de Participantes</div>
-                      <div className="font-semibold">{survey.participantCount}</div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <div className="bg-primary/10 p-2 rounded-full">
-                      <CalendarDays size={18} className="text-primary" />
-                    </div>
-                    <div>
-                      <div className="text-sm text-muted-foreground">Status</div>
-                      <div className="font-semibold">
-                        {survey.status === "active" && "Ativa"}
-                        {survey.status === "paused" && "Pausada"}
-                        {survey.status === "finished" && "Finalizada"}
-                      </div>
-                    </div>
-                  </div>
+                <div className="flex items-center justify-between border rounded-md p-2">
+                  <code className="text-xs truncate bg-gray-50 p-1 rounded flex-1 mr-2">
+                    https://sensorynexus.app/s/{id}
+                  </code>
+                  <Button variant="outline" size="sm" onClick={() => {
+                    navigator.clipboard.writeText(`https://sensorynexus.app/s/${id}`);
+                    toast({ description: "Link copiado para o clipboard!" });
+                  }}>
+                    Copiar
+                  </Button>
                 </div>
-
-                <div className="mt-6 space-y-3">
-                  <Button className="w-full">Editar Pesquisa</Button>
-                  {survey.status === "active" && (
-                    <Button variant="outline" className="w-full">Pausar Pesquisa</Button>
-                  )}
-                  {survey.status === "paused" && (
-                    <Button variant="outline" className="w-full">Reativar Pesquisa</Button>
-                  )}
-                  <Button variant="outline" className="w-full">Duplicar</Button>
-                </div>
+                <Button 
+                  variant="outline" 
+                  className="w-full mt-4"
+                  onClick={() => setIsShareOpen(true)}
+                >
+                  <Share2 className="mr-2 h-4 w-4" />
+                  Compartilhar Pesquisa
+                </Button>
               </CardContent>
             </Card>
 
@@ -358,18 +398,45 @@ export default function SurveyDetail() {
               <CardHeader>
                 <CardTitle>Participantes</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {survey.status === "active" && (
-                    <Button className="w-full">Convidar Participantes</Button>
-                  )}
-                  <Button variant="outline" className="w-full">Ver Todos Participantes</Button>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium">Total</p>
+                    <p className="text-2xl font-bold">{survey.totalResponses}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Meta</p>
+                    <p className="text-lg">{survey.targetResponses}</p>
+                  </div>
                 </div>
+                
+                <div className="w-full bg-gray-100 rounded-full h-2.5">
+                  <div 
+                    className="bg-primary h-2.5 rounded-full" 
+                    style={{ width: `${Math.min((survey.totalResponses / survey.targetResponses) * 100, 100)}%` }}
+                  ></div>
+                </div>
+                
+                <p className="text-sm text-muted-foreground">
+                  {formatProgress()} respostas obtidas
+                </p>
+
+                <Button variant="outline" className="w-full mt-2">
+                  <Users className="mr-2 h-4 w-4" />
+                  Ver Perfil dos Participantes
+                </Button>
               </CardContent>
             </Card>
           </div>
         </div>
       </main>
+
+      <ShareSurvey 
+        open={isShareOpen} 
+        onOpenChange={setIsShareOpen} 
+        surveyId={id || ""} 
+        surveyName={survey.title}
+      />
     </div>
   );
 }
