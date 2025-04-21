@@ -9,7 +9,6 @@ import Dashboard from "./pages/Dashboard";
 import SurveyCreate from "./pages/SurveyCreate";
 import SchedulingCreate from "./pages/SchedulingCreate";
 import NotFound from "./pages/NotFound";
-import Index from "./pages/Index";
 import Surveys from "./pages/Surveys";
 import SurveyDetail from "./pages/SurveyDetail";
 import Scheduling from "./pages/Scheduling";
@@ -21,7 +20,14 @@ import ConsumerProfile from "./pages/ConsumerProfile";
 import DeliveryManagement from "./pages/DeliveryManagement";
 import Analytics from "./pages/Analytics";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -30,7 +36,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Navigate to="/login" />} />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/login" element={<Login />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/surveys" element={<Surveys />} />
