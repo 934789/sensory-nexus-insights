@@ -7,13 +7,23 @@ import { useToast } from "@/components/ui/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
 import { StarRating } from "@/components/StarRating";
 import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface ShareSurveyProps {
   surveyId: string;
+  surveyName?: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   onSubmitRating?: (rating: number, comment: string) => void;
 }
 
-export function ShareSurvey({ surveyId, onSubmitRating }: ShareSurveyProps) {
+export function ShareSurvey({ 
+  surveyId, 
+  surveyName, 
+  open, 
+  onOpenChange,
+  onSubmitRating 
+}: ShareSurveyProps) {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   const [rating, setRating] = useState(0);
@@ -55,7 +65,41 @@ export function ShareSurvey({ surveyId, onSubmitRating }: ShareSurveyProps) {
       description: "Obrigado pelo seu feedback.",
     });
   };
+
+  // Se for usado como modal
+  if (open !== undefined && onOpenChange) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Compartilhar Pesquisa</DialogTitle>
+            <DialogDescription>
+              {surveyName ? `Compartilhe a pesquisa "${surveyName}" com participantes` : "Compartilhe esta pesquisa com participantes"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center space-x-2">
+            <Input value={shareUrl} readOnly className="font-mono text-sm" />
+            <Button variant="outline" onClick={handleCopy}>
+              {copied ? <Check size={16} /> : <Copy size={16} />}
+            </Button>
+          </div>
+          <div className="flex flex-col gap-2">
+            <p className="text-sm text-muted-foreground">Ou compartilhe via</p>
+            <div className="flex gap-2">
+              <Button variant="outline" className="w-full">
+                <span>Email</span>
+              </Button>
+              <Button variant="outline" className="w-full">
+                <span>WhatsApp</span>
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
   
+  // Se for usado como componente standalone
   return (
     <div className="space-y-6">
       <Card>

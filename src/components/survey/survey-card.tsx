@@ -10,11 +10,14 @@ interface SurveyCardProps {
   id: string;
   title: string;
   description?: string;
-  status: "draft" | "active" | "scheduled" | "completed";
-  totalResponses: number;
-  targetResponses: number;
+  status: "draft" | "active" | "scheduled" | "completed" | "paused" | "finished";
+  totalResponses?: number;
+  targetResponses?: number;
+  participantCount?: number; // Adicionando suporte para participantCount
   date?: string;
   className?: string;
+  imageSrc?: string;
+  onClick?: () => void;
 }
 
 export function SurveyCard({
@@ -22,10 +25,12 @@ export function SurveyCard({
   title,
   description,
   status,
-  totalResponses,
-  targetResponses,
+  totalResponses = 0,
+  targetResponses = 100,
+  participantCount,
   date,
-  className
+  className,
+  onClick
 }: SurveyCardProps) {
   const getStatusBadge = () => {
     switch (status) {
@@ -37,6 +42,10 @@ export function SurveyCard({
         return <Badge className="bg-blue-500">Agendada</Badge>;
       case "completed":
         return <Badge className="bg-purple-500">Concluída</Badge>;
+      case "paused":
+        return <Badge className="bg-orange-500">Pausada</Badge>;
+      case "finished":
+        return <Badge className="bg-gray-500">Finalizada</Badge>;
     }
   };
 
@@ -44,8 +53,11 @@ export function SurveyCard({
     return Math.round((totalResponses / targetResponses) * 100);
   };
 
+  // Use participantCount se fornecido, caso contrário, use totalResponses
+  const responseCount = participantCount !== undefined ? participantCount : totalResponses;
+
   return (
-    <Card className={cn("transition-all hover:border-primary", className)}>
+    <Card className={cn("transition-all hover:border-primary", className)} onClick={onClick}>
       <CardHeader>
         <div className="flex justify-between items-start">
           <div>
@@ -64,7 +76,7 @@ export function SurveyCard({
           <div className="flex justify-between items-center text-sm">
             <div className="flex items-center text-muted-foreground">
               <Users className="mr-1 h-4 w-4" />
-              <span>{totalResponses} respostas</span>
+              <span>{responseCount} respostas</span>
             </div>
             {date && (
               <div className="flex items-center text-muted-foreground">

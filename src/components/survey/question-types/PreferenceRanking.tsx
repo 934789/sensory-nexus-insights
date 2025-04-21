@@ -4,8 +4,8 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { DragHandleDots2Icon } from "@radix-ui/react-icons";
 import { ArrowUp, ArrowDown } from "lucide-react";
+import { DragHandleDots2Icon } from "@radix-ui/react-icons";
 
 interface RankOption {
   id: string;
