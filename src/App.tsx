@@ -16,6 +16,9 @@ import SchedulingDetail from "./pages/SchedulingDetail";
 import SchedulingPreview from "./pages/SchedulingPreview";
 import Profile from "./pages/Profile";
 import RecruiterProfile from "./pages/RecruiterProfile";
+import ConsumerProfile from "./pages/ConsumerProfile";
+import DeliveryManagement from "./pages/DeliveryManagement";
+import Analytics from "./pages/Analytics";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +40,9 @@ const App = () => (
           <Route path="/scheduling/:id/preview" element={<SchedulingPreview />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/recruiter-profile" element={<RecruiterProfile />} />
+          <Route path="/consumer-profile" element={<ConsumerProfile />} />
+          <Route path="/delivery-management" element={<DeliveryManagement />} />
+          <Route path="/analytics" element={<Analytics />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
