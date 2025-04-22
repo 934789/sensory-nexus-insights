@@ -8,6 +8,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/components/ui/use-toast";
 import { User, Star, Calendar, Clock, Award, Gift, ChartBar, Package } from "lucide-react";
 import { supabaseClient } from "@/integrations/supabase/mock-client";
+import { supabase } from "@/integrations/supabase/client";
 import { SampleDeliveryConfirmation } from "@/components/delivery/SampleDeliveryConfirmation";
 
 // Medallion levels for consumer profiles
@@ -186,7 +187,7 @@ export default function ConsumerProfile() {
   const loadProfileData = async () => {
     try {
       // Get user session
-      const { data: sessionData } = await supabaseClient.auth.getSession();
+      const { data: sessionData } = await supabase.auth.getSession();
       const userId = sessionData?.session?.user.id;
       
       if (!userId) return;
@@ -200,17 +201,20 @@ export default function ConsumerProfile() {
       
       if (profileError) throw profileError;
       if (profileData) {
+        // Trate profileData como um objeto genérico com qualquer propriedade
+        const typedProfileData = profileData as Record<string, any>;
+        
         setProfile(prev => ({
           ...prev,
-          name: profileData.name || prev.name,
-          email: profileData.email || prev.email,
-          points: profileData.points || prev.points,
-          completedSurveys: profileData.completed_surveys || prev.completedSurveys,
-          location: profileData.location || prev.location,
-          allergies: profileData.allergies || prev.allergies,
-          preferences: profileData.preferences || prev.preferences,
-          memberSince: profileData.created_at 
-            ? new Date(profileData.created_at).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+          name: typedProfileData.name || prev.name,
+          email: typedProfileData.email || prev.email,
+          points: typedProfileData.points || prev.points,
+          completedSurveys: typedProfileData.completed_surveys || prev.completedSurveys,
+          location: typedProfileData.location || prev.location,
+          allergies: typedProfileData.allergies || prev.allergies,
+          preferences: typedProfileData.preferences || prev.preferences,
+          memberSince: typedProfileData.created_at 
+            ? new Date(typedProfileData.created_at).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
             : prev.memberSince
         }));
       }
@@ -230,7 +234,7 @@ export default function ConsumerProfile() {
       
       if (deliveriesError) throw deliveriesError;
       
-      if (deliveries && deliveries.length > 0) {
+      if (deliveries && Array.isArray(deliveries) && deliveries.length > 0) {
         setPendingDeliveries(deliveries);
       }
       
@@ -244,12 +248,12 @@ export default function ConsumerProfile() {
     
     // Set up subscription for real-time updates
     const getChannelName = async () => {
-      const { data } = await supabaseClient.auth.getSession();
+      const { data } = await supabase.auth.getSession();
       return `profile-delivery-updates-${data.session?.user.id || 'anonymous'}`;
     };
     
     getChannelName().then(channelName => {
-      const deliveriesSubscription = supabaseClient
+      const deliveriesSubscription = supabase
         .channel(channelName)
         .on('postgres_changes', 
           { 
@@ -264,7 +268,7 @@ export default function ConsumerProfile() {
         .subscribe();
         
       return () => {
-        supabaseClient.removeChannel(deliveriesSubscription);
+        supabase.removeChannel(deliveriesSubscription);
       };
     });
   }, []);

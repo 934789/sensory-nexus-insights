@@ -30,7 +30,7 @@ export function SampleDeliveryConfirmation({
     setIsLoading(true);
     
     try {
-      // Update delivery status in the database
+      // Atualizar status de entrega no banco de dados
       const { error } = await supabaseClient
         .from('sample_deliveries')
         .update({ status: 'delivered' })
@@ -38,13 +38,13 @@ export function SampleDeliveryConfirmation({
       
       if (error) throw error;
       
-      // Update local state
+      // Atualizar estado local
       setCurrentStatus('delivered');
       
-      // Notify recruiter about the delivery confirmation
+      // Notificar recrutador sobre a confirmação de entrega
       await supabaseClient.from('notifications')
         .insert({
-          recipient_id: null, // Will be fetched from the survey
+          recipient_id: null, // Será buscado da pesquisa
           survey_id: surveyId,
           message: `Amostra ${code} foi recebida pelo participante`,
           type: 'delivery_confirmation',
@@ -67,7 +67,7 @@ export function SampleDeliveryConfirmation({
     }
   };
   
-  // Already delivered, show just status
+  // Já entregue, mostrar apenas status
   if (currentStatus === 'delivered' || currentStatus === 'completed') {
     return (
       <Card>
@@ -95,7 +95,7 @@ export function SampleDeliveryConfirmation({
     );
   }
   
-  // Not yet delivered, show confirmation button
+  // Ainda não entregue, mostrar botão de confirmação
   return (
     <Card>
       <CardHeader className="pb-2">

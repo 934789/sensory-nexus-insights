@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Lock, Mail, User, ChevronDown } from "lucide-react";
@@ -12,6 +11,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { supabaseClient } from "@/integrations/supabase/mock-client";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -118,7 +118,7 @@ export default function Login() {
       // Create profile record in appropriate table
       const profileTable = userType === 'recruiter' ? 'recruiter_profiles' : 'consumer_profiles';
       
-      const { error: profileError } = await supabase
+      const { error: profileError } = await supabaseClient
         .from(profileTable)
         .insert({
           user_id: data.user?.id,
