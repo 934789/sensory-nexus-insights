@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,12 +30,11 @@ export function SampleDeliveryConfirmation({
     setIsLoading(true);
     
     try {
-      // Update delivery status in the database
-      // Convert sampleId to number if it's numeric, otherwise keep as string
+      // Update delivery status in the database - our updated mock client will handle the ID type
       const { error } = await supabaseClient
         .from('sample_deliveries')
         .update({ status: 'delivered' })
-        .eq('id', sampleId); // Our updated mock client will handle the type conversion
+        .eq('id', sampleId); 
       
       if (error) throw error;
       

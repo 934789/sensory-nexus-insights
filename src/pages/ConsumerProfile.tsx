@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Navbar } from "@/components/layout/navbar";
 import { Button } from "@/components/ui/button";
@@ -204,18 +205,17 @@ export default function ConsumerProfile() {
       
       if (!userId) return;
       
-      // Get profile data without using complex types
+      // Get profile data - use any to bypass type checking
       try {
-        // @ts-ignore - use any to bypass complex type issues
         const { data: profileData, error: profileError } = await supabaseClient
           .from('consumer_profiles')
           .select('*')
           .eq('user_id', userId)
-          .single();
+          .single() as { data: any, error: any };
         
         if (profileError) throw profileError;
         
-        if (profileData) {
+        if (profileData && typeof profileData === 'object') {
           setProfile(prev => ({
             ...prev,
             name: profileData.name || prev.name,
@@ -236,7 +236,6 @@ export default function ConsumerProfile() {
       
       // Get pending deliveries with a simpler approach
       try {
-        // @ts-ignore - use any to bypass complex type issues
         const { data: deliveries, error: deliveriesError } = await supabaseClient
           .from('sample_deliveries')
           .select(`
@@ -247,13 +246,17 @@ export default function ConsumerProfile() {
             surveys(id, title)
           `)
           .eq('consumer_id', userId)
-          .in('status', ['shipped', 'in-transit']);
+          .in('status', ['shipped', 'in-transit']) as { data: any, error: any };
         
         if (deliveriesError) throw deliveriesError;
         
         if (deliveries && Array.isArray(deliveries) && deliveries.length > 0) {
-          // Cast to our simple DeliveryData type to avoid complex type issues
-          setPendingDeliveries(deliveries as DeliveryData[]);
+          // Make sure we have proper data and convert to our DeliveryData type
+          const validDeliveries = deliveries.filter((d: any) => 
+            d && typeof d === 'object' && d.id && d.code && d.name && d.status
+          ) as DeliveryData[];
+          
+          setPendingDeliveries(validDeliveries);
         }
       } catch (e) {
         console.error("Error loading deliveries:", e);
