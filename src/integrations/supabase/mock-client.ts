@@ -1,9 +1,9 @@
 
 import { supabase } from './client';
 
-// Esta é uma versão modificada do cliente Supabase que contorna as restrições de tipo
-// Usamos "any" temporariamente para fazer funcionar com nossos componentes
-// Em um app de produção, você definiria todos os tipos adequadamente
+// This is a modified version of the Supabase client that bypasses type restrictions
+// We use "any" temporarily to make it work with our components
+// In a production app, you would define all types properly
 
 type AnyObject = Record<string, any>;
 
@@ -11,7 +11,7 @@ const mockClient = {
   from: (table: string) => {
     return {
       select: (query?: string) => {
-        // @ts-ignore - ignoramos a verificação de tipo aqui para contornar as restrições
+        // @ts-ignore - ignoring type check here to bypass the restrictions
         return supabase.from(table).select(query);
       },
       insert: (values: AnyObject | AnyObject[], options?: any) => {
@@ -31,6 +31,7 @@ const mockClient = {
         return supabase.from(table).delete();
       },
       eq: (column: string, value: any) => {
+        // Handle both string and number IDs
         // @ts-ignore
         return supabase.from(table).eq(column, value);
       },

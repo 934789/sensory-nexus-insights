@@ -183,7 +183,7 @@ export default function ConsumerProfile() {
     });
   };
 
-  // Load profile data and pending deliveries from Supabase
+  // Load profile data and pending deliveries
   const loadProfileData = async () => {
     try {
       // Get user session
@@ -192,16 +192,19 @@ export default function ConsumerProfile() {
       
       if (!userId) return;
       
-      // Get profile data
-      const { data: profileData, error: profileError } = await supabaseClient
+      // Get profile data - Using Promise to avoid deep type instantiation
+      const profilePromise = supabaseClient
         .from('consumer_profiles')
         .select('*')
         .eq('user_id', userId)
         .single();
+        
+      const { data: profileData, error: profileError } = await profilePromise;
       
       if (profileError) throw profileError;
+      
       if (profileData) {
-        // Trate profileData como um objeto genérico com qualquer propriedade
+        // Treat profileData as a generic object with any property
         const typedProfileData = profileData as Record<string, any>;
         
         setProfile(prev => ({
@@ -219,8 +222,8 @@ export default function ConsumerProfile() {
         }));
       }
       
-      // Get pending deliveries
-      const { data: deliveries, error: deliveriesError } = await supabaseClient
+      // Get pending deliveries - Using Promise to avoid deep type instantiation
+      const deliveriesPromise = supabaseClient
         .from('sample_deliveries')
         .select(`
           id,
@@ -231,11 +234,13 @@ export default function ConsumerProfile() {
         `)
         .eq('consumer_id', userId)
         .in('status', ['shipped', 'in-transit']);
+        
+      const { data: deliveries, error: deliveriesError } = await deliveriesPromise;
       
       if (deliveriesError) throw deliveriesError;
       
       if (deliveries && Array.isArray(deliveries) && deliveries.length > 0) {
-        setPendingDeliveries(deliveries);
+        setPendingDeliveries(deliveries as any[]);
       }
       
     } catch (error) {
@@ -247,12 +252,11 @@ export default function ConsumerProfile() {
     loadProfileData();
     
     // Set up subscription for real-time updates
-    const getChannelName = async () => {
+    const setupRealtimeSubscription = async () => {
       const { data } = await supabase.auth.getSession();
-      return `profile-delivery-updates-${data.session?.user.id || 'anonymous'}`;
-    };
-    
-    getChannelName().then(channelName => {
+      const userId = data.session?.user.id || 'anonymous';
+      const channelName = `profile-delivery-updates-${userId}`;
+      
       const deliveriesSubscription = supabase
         .channel(channelName)
         .on('postgres_changes', 
@@ -270,7 +274,9 @@ export default function ConsumerProfile() {
       return () => {
         supabase.removeChannel(deliveriesSubscription);
       };
-    });
+    };
+    
+    setupRealtimeSubscription();
   }, []);
 
   // Render helper for status badges
