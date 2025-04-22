@@ -205,17 +205,17 @@ export default function ConsumerProfile() {
       if (!userId) return;
       
       try {
-        const profileResponse = await supabaseClient
+        const profileResult = await supabaseClient
           .from('consumer_profiles')
-          .select('*');
-          
-        const profileQuery = profileResponse.eq('user_id', userId);
-        const { data: profileData, error: profileError } = await profileQuery.single();
+          .select('*')
+          .eq('user_id', userId);
         
-        if (profileError) {
-          console.error("Erro ao carregar perfil:", profileError);
+        if (profileResult.error) {
+          console.error("Erro ao carregar perfil:", profileResult.error);
           return;
         }
+        
+        const profileData = profileResult.data?.[0];
         
         if (profileData && typeof profileData === 'object') {
           setProfile(prev => ({
@@ -237,7 +237,7 @@ export default function ConsumerProfile() {
       }
       
       try {
-        const deliveriesResponse = await supabaseClient
+        const deliveriesResult = await supabaseClient
           .from('sample_deliveries')
           .select(`
             id,
@@ -245,29 +245,28 @@ export default function ConsumerProfile() {
             name,
             status,
             surveys(id, title)
-          `);
-          
-        const deliveriesWithConsumer = deliveriesResponse.eq('consumer_id', userId);
-        const { data: deliveriesData, error: deliveriesError } = await deliveriesWithConsumer.in('status', ['shipped', 'in-transit']);
+          `)
+          .eq('consumer_id', userId)
+          .in('status', ['shipped', 'in-transit']);
         
-        if (deliveriesError) {
-          console.error("Erro ao carregar entregas:", deliveriesError);
+        if (deliveriesResult.error) {
+          console.error("Erro ao carregar entregas:", deliveriesResult.error);
           return;
         }
         
-        if (deliveriesData && Array.isArray(deliveriesData)) {
-          const validDeliveries = deliveriesData
-            .filter(d => d && typeof d === 'object' && d.id && d.code && d.name && d.status)
-            .map(d => ({
-              id: d.id,
-              code: d.code,
-              name: d.name,
-              status: d.status,
-              surveys: d.surveys
-            }));
-          
-          setPendingDeliveries(validDeliveries);
-        }
+        const deliveriesData = deliveriesResult.data || [];
+        
+        const validDeliveries: DeliveryData[] = deliveriesData
+          .filter((d: any) => d && typeof d === 'object' && d.id && d.code && d.name && d.status)
+          .map((d: any) => ({
+            id: d.id,
+            code: d.code,
+            name: d.name,
+            status: d.status,
+            surveys: d.surveys
+          }));
+        
+        setPendingDeliveries(validDeliveries);
       } catch (e) {
         console.error("Erro ao processar entregas:", e);
       }
@@ -309,12 +308,7 @@ export default function ConsumerProfile() {
       }
     };
     
-    const unsubscribe = setupRealtimeSubscription();
-    return () => {
-      if (typeof unsubscribe === 'function') {
-        unsubscribe();
-      }
-    };
+    setupRealtimeSubscription();
   }, []);
 
   const renderStatusBadge = (status: string) => {

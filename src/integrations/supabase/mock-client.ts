@@ -1,152 +1,166 @@
 
 import { supabase } from './client';
 
-// Esta é uma versão modificada do cliente Supabase que contorna restrições de tipo
-// Usamos "any" temporariamente para funcionar com nossos componentes
-// Em um app de produção, você definiria todos os tipos corretamente
+// Define common return types for our mock client
+interface MockResponse<T = any> {
+  data: T | null;
+  error: any | null;
+}
 
-type AnyObject = Record<string, any>;
+// Type for query builder methods
+type QueryMethod = 'eq' | 'neq' | 'in' | 'order' | 'limit' | 'single';
 
-// Função auxiliar para converter valores de ID conforme necessário
-const processId = (value: any): any => {
-  // Se o valor for uma string que parece um número, converte para número
-  if (typeof value === 'string' && !isNaN(Number(value)) && value.trim() !== '') {
-    return Number(value);
+class MockQueryBuilder {
+  private tableName: string;
+  private methods: Array<{
+    name: QueryMethod;
+    args: any[];
+  }> = [];
+
+  constructor(tableName: string) {
+    this.tableName = tableName;
   }
-  return value;
-};
 
-const createQueryBuilder = (table: string) => {
-  // Wrapper para o from para garantir que temos um builder válido antes de continuar
-  const queryBuilder = supabase.from(table);
+  // Generic method to add a query method and return this builder
+  private addMethod(name: QueryMethod, ...args: any[]): MockQueryBuilder {
+    this.methods.push({ name, args });
+    return this;
+  }
 
-  return {
-    select: (query?: string) => {
-      try {
-        // @ts-ignore - ignorando verificação de tipo aqui para contornar as restrições
-        return supabase.from(table).select(query);
-      } catch (error) {
-        console.error(`Error selecting from ${table}:`, error);
-        return { error: true, data: null };
-      }
-    },
-    insert: (values: AnyObject | AnyObject[], options?: any) => {
-      try {
-        // @ts-ignore
-        return supabase.from(table).insert(values, options);
-      } catch (error) {
-        console.error(`Error inserting into ${table}:`, error);
-        return { error: { message: `Failed to insert into ${table}` }, data: null };
-      }
-    },
-    update: (values: AnyObject) => {
-      const updateBuilder = {
-        eq: (column: string, value: any) => {
-          try {
-            // Use a função auxiliar para processar IDs
-            const processedValue = column === 'id' ? processId(value) : value;
-            // @ts-ignore
-            return supabase.from(table).update(values).eq(column, processedValue);
-          } catch (error) {
-            console.error(`Error updating ${table} with eq on ${column}:`, error);
-            return { error: { message: `Failed to update ${table}` }, data: null };
-          }
-        }
-      };
+  // Select method
+  select(query?: string): MockQueryBuilder {
+    return this.addMethod('select', query);
+  }
 
-      return updateBuilder;
-    },
-    upsert: (values: AnyObject | AnyObject[], options?: any) => {
-      try {
-        // @ts-ignore
-        return supabase.from(table).upsert(values, options);
-      } catch (error) {
-        console.error(`Error upserting into ${table}:`, error);
-        return { error: { message: `Failed to upsert into ${table}` }, data: null };
-      }
-    },
-    delete: () => {
-      const deleteBuilder = {
-        eq: (column: string, value: any) => {
-          try {
-            const processedValue = column === 'id' ? processId(value) : value;
-            // @ts-ignore
-            return supabase.from(table).delete().eq(column, processedValue);
-          } catch (error) {
-            console.error(`Error deleting from ${table} with eq on ${column}:`, error);
-            return { error: { message: `Failed to delete from ${table}` }, data: null };
-          }
-        }
-      };
+  // Filter methods
+  eq(column: string, value: any): MockQueryBuilder {
+    return this.addMethod('eq', column, value);
+  }
+
+  neq(column: string, value: any): MockQueryBuilder {
+    return this.addMethod('neq', column, value);
+  }
+
+  in(column: string, values: any[]): MockQueryBuilder {
+    return this.addMethod('in', column, values);
+  }
+
+  // Order method
+  order(column: string, options?: { ascending?: boolean }): MockQueryBuilder {
+    return this.addMethod('order', column, options);
+  }
+
+  // Limit method
+  limit(count: number): MockQueryBuilder {
+    return this.addMethod('limit', count);
+    return this;
+  }
+
+  // Single result method
+  single(): MockQueryBuilder {
+    return this.addMethod('single', null);
+  }
+
+  // This does all the mock query execution at the end of the chain
+  async then(onFulfilled: (value: MockResponse) => any): Promise<any> {
+    // In a real implementation, this would properly chain all the query methods
+    // For simplicity, we'll just return a successful mock response
+    try {
+      // Attempt to execute the real query against Supabase
+      let query = supabase.from(this.tableName);
       
-      return deleteBuilder;
-    },
-    eq: (column: string, value: any) => {
-      try {
-        // Use a função auxiliar para processar IDs
-        const processedValue = column === 'id' ? processId(value) : value;
-        // @ts-ignore
-        return supabase.from(table).eq(column, processedValue);
-      } catch (error) {
-        console.error(`Error with eq on ${table}.${column}:`, error);
-        return { error: { message: `Failed eq operation on ${table}.${column}` }, data: null };
+      // Apply all methods in the chain
+      for (const method of this.methods) {
+        if (method.name === 'select') {
+          query = (query as any).select(method.args[0]);
+        } else if (method.name === 'eq') {
+          query = (query as any).eq(method.args[0], method.args[1]);
+        } else if (method.name === 'neq') {
+          query = (query as any).neq(method.args[0], method.args[1]);
+        } else if (method.name === 'in') {
+          query = (query as any).in(method.args[0], method.args[1]);
+        } else if (method.name === 'order') {
+          query = (query as any).order(method.args[0], method.args[1]);
+        } else if (method.name === 'limit') {
+          query = (query as any).limit(method.args[0]);
+        } else if (method.name === 'single') {
+          query = (query as any).single();
+        }
       }
-    },
-    neq: (column: string, value: any) => {
-      try {
-        const processedValue = column === 'id' ? processId(value) : value;
-        // @ts-ignore
-        return supabase.from(table).neq(column, processedValue);
-      } catch (error) {
-        console.error(`Error with neq on ${table}.${column}:`, error);
-        return { error: { message: `Failed neq operation on ${table}.${column}` }, data: null };
-      }
-    },
-    in: (column: string, values: any[]) => {
-      try {
-        // Processa todos os valores no array se for uma coluna ID
-        const processedValues = column === 'id' 
-          ? values.map(v => processId(v))
-          : values;
-        // @ts-ignore
-        return supabase.from(table).in(column, processedValues);
-      } catch (error) {
-        console.error(`Error with in on ${table}.${column}:`, error);
-        return { error: { message: `Failed in operation on ${table}.${column}` }, data: null };
-      }
-    },
-    order: (column: string, options?: any) => {
-      try {
-        // @ts-ignore
-        return supabase.from(table).order(column, options);
-      } catch (error) {
-        console.error(`Error with order on ${table}.${column}:`, error);
-        return { error: { message: `Failed order operation on ${table}.${column}` }, data: null };
-      }
-    },
-    limit: (count: number) => {
-      try {
-        // @ts-ignore
-        return supabase.from(table).limit(count);
-      } catch (error) {
-        console.error(`Error with limit on ${table}:`, error);
-        return { error: { message: `Failed limit operation on ${table}` }, data: null };
-      }
-    },
-    single: () => {
-      try {
-        // @ts-ignore
-        return supabase.from(table).single();
-      } catch (error) {
-        console.error(`Error with single on ${table}:`, error);
-        return { error: { message: `Failed single operation on ${table}` }, data: null };
-      }
-    },
-  };
-};
 
+      // Execute the query
+      const result = await query;
+      return onFulfilled(result);
+    } catch (error) {
+      console.error(`Error executing query on ${this.tableName}:`, error);
+      const response: MockResponse = { data: null, error };
+      return onFulfilled(response);
+    }
+  }
+
+  // Execute methods for insert, update, upsert, delete
+  async insert(values: any, options?: any): Promise<MockResponse> {
+    try {
+      const { data, error } = await supabase.from(this.tableName).insert(values, options);
+      return { data, error };
+    } catch (error) {
+      console.error(`Error inserting into ${this.tableName}:`, error);
+      return { data: null, error };
+    }
+  }
+
+  async update(values: any): Promise<MockResponse> {
+    try {
+      // Apply all methods in the chain
+      let query = supabase.from(this.tableName).update(values);
+
+      for (const method of this.methods) {
+        if (method.name === 'eq') {
+          query = query.eq(method.args[0], method.args[1]);
+        }
+      }
+
+      const { data, error } = await query;
+      return { data, error };
+    } catch (error) {
+      console.error(`Error updating ${this.tableName}:`, error);
+      return { data: null, error };
+    }
+  }
+
+  async upsert(values: any, options?: any): Promise<MockResponse> {
+    try {
+      const { data, error } = await supabase.from(this.tableName).upsert(values, options);
+      return { data, error };
+    } catch (error) {
+      console.error(`Error upserting into ${this.tableName}:`, error);
+      return { data: null, error };
+    }
+  }
+
+  async delete(): Promise<MockResponse> {
+    try {
+      // Apply all methods in the chain
+      let query = supabase.from(this.tableName).delete();
+
+      for (const method of this.methods) {
+        if (method.name === 'eq') {
+          query = query.eq(method.args[0], method.args[1]);
+        }
+      }
+
+      const { data, error } = await query;
+      return { data, error };
+    } catch (error) {
+      console.error(`Error deleting from ${this.tableName}:`, error);
+      return { data: null, error };
+    }
+  }
+}
+
+// The mock client itself
 const mockClient = {
-  from: (table: string) => createQueryBuilder(table),
+  from: (table: string) => new MockQueryBuilder(table),
   auth: supabase.auth,
   channel: (channel: string) => {
     return supabase.channel(channel);

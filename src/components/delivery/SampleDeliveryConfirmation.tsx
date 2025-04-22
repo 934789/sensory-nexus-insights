@@ -31,19 +31,19 @@ export function SampleDeliveryConfirmation({
     
     try {
       // Atualiza o status da entrega no banco de dados usando o cliente mock atualizado
-      const updateQuery = supabaseClient
+      const updateResult = await supabaseClient
         .from('sample_deliveries')
-        .update({ status: 'delivered' });
+        .update({ status: 'delivered' })
+        .eq('id', sampleId);
         
-      const { error } = await updateQuery.eq('id', sampleId);
-      
-      if (error) throw error;
+      if (updateResult.error) throw updateResult.error;
       
       // Atualiza o estado local
       setCurrentStatus('delivered');
       
       // Notifica o recrutador sobre a confirmação de entrega
-      await supabaseClient.from('notifications')
+      const notificationResult = await supabaseClient
+        .from('notifications')
         .insert({
           recipient_id: null, // Será buscado a partir da pesquisa
           survey_id: surveyId,
@@ -51,6 +51,10 @@ export function SampleDeliveryConfirmation({
           type: 'delivery_confirmation',
           read: false
         });
+      
+      if (notificationResult.error) {
+        console.error("Erro ao enviar notificação:", notificationResult.error);
+      }
       
       toast({
         title: "Recebimento confirmado!",

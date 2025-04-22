@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Navbar } from "@/components/layout/navbar";
 import { Button } from "@/components/ui/button";
@@ -55,7 +56,7 @@ export default function DeliveryManagement() {
   const fetchDeliveries = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabaseClient
+      const result = await supabaseClient
         .from('sample_deliveries')
         .select(`
           id,
@@ -75,6 +76,8 @@ export default function DeliveryManagement() {
         `)
         .order('scheduled_date', { ascending: false });
 
+      const { data, error } = result;
+      
       if (error) throw error;
 
       // Formata os dados para corresponder à nossa interface
@@ -131,11 +134,12 @@ export default function DeliveryManagement() {
 
   const handleStatusUpdate = async (deliveryId: string, newStatus: DeliveryStatus) => {
     try {
-      const updateQuery = supabaseClient
+      const result = await supabaseClient
         .from('sample_deliveries')
-        .update({ status: newStatus });
+        .update({ status: newStatus })
+        .eq('id', deliveryId);
         
-      const { error } = await updateQuery.eq('id', deliveryId);
+      const { error } = result;
       
       if (error) throw error;
       
@@ -161,11 +165,12 @@ export default function DeliveryManagement() {
 
   const handleApproveParticipant = async (consumerId: string, approved: boolean) => {
     try {
-      const updateQuery = supabaseClient
+      const result = await supabaseClient
         .from('consumer_profiles')
-        .update({ approved });
+        .update({ approved })
+        .eq('id', consumerId);
         
-      const { error } = await updateQuery.eq('id', consumerId);
+      const { error } = result;
       
       if (error) throw error;
       
