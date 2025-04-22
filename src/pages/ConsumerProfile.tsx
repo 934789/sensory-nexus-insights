@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Navbar } from "@/components/layout/navbar";
 import { Button } from "@/components/ui/button";
@@ -8,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/components/ui/use-toast";
 import { User, Star, Calendar, Clock, Award, Gift, ChartBar, Package } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabaseClient } from "@/integrations/supabase/mock-client";
 import { SampleDeliveryConfirmation } from "@/components/delivery/SampleDeliveryConfirmation";
 
 // Medallion levels for consumer profiles
@@ -187,13 +186,13 @@ export default function ConsumerProfile() {
   const loadProfileData = async () => {
     try {
       // Get user session
-      const { data: sessionData } = await supabase.auth.getSession();
-      const userId = sessionData.session?.user.id;
+      const { data: sessionData } = await supabaseClient.auth.getSession();
+      const userId = sessionData?.session?.user.id;
       
       if (!userId) return;
       
       // Get profile data
-      const { data: profileData, error: profileError } = await supabase
+      const { data: profileData, error: profileError } = await supabaseClient
         .from('consumer_profiles')
         .select('*')
         .eq('user_id', userId)
@@ -217,7 +216,7 @@ export default function ConsumerProfile() {
       }
       
       // Get pending deliveries
-      const { data: deliveries, error: deliveriesError } = await supabase
+      const { data: deliveries, error: deliveriesError } = await supabaseClient
         .from('sample_deliveries')
         .select(`
           id,
@@ -244,24 +243,30 @@ export default function ConsumerProfile() {
     loadProfileData();
     
     // Set up subscription for real-time updates
-    const deliveriesSubscription = supabase
-      .channel('profile-delivery-updates')
-      .on('postgres_changes', 
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'sample_deliveries',
-          filter: `consumer_id=eq.${supabase.auth.getSession().then(res => res.data.session?.user.id)}` 
-        },
-        () => {
-          loadProfileData();
-        }
-      )
-      .subscribe();
-      
-    return () => {
-      supabase.removeChannel(deliveriesSubscription);
+    const getChannelName = async () => {
+      const { data } = await supabaseClient.auth.getSession();
+      return `profile-delivery-updates-${data.session?.user.id || 'anonymous'}`;
     };
+    
+    getChannelName().then(channelName => {
+      const deliveriesSubscription = supabaseClient
+        .channel(channelName)
+        .on('postgres_changes', 
+          { 
+            event: '*', 
+            schema: 'public', 
+            table: 'sample_deliveries'
+          },
+          () => {
+            loadProfileData();
+          }
+        )
+        .subscribe();
+        
+      return () => {
+        supabaseClient.removeChannel(deliveriesSubscription);
+      };
+    });
   }, []);
 
   // Render helper for status badges
@@ -312,10 +317,10 @@ export default function ConsumerProfile() {
                 <SampleDeliveryConfirmation
                   key={delivery.id}
                   sampleId={delivery.id}
-                  name={delivery.name || delivery.surveys.title}
+                  name={delivery.name || delivery.surveys?.title}
                   status={delivery.status}
                   code={delivery.code}
-                  surveyId={delivery.surveys.id}
+                  surveyId={delivery.surveys?.id}
                 />
               ))}
             </div>

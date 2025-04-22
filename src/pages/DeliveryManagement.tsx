@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Navbar } from "@/components/layout/navbar";
 import { Button } from "@/components/ui/button";
@@ -10,7 +9,7 @@ import { Search, Package, Calendar, CheckCircle, Filter, MapPin, User, ThumbsUp,
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { supabaseClient } from "@/integrations/supabase/mock-client";
 
 // Define types for deliveries
 type DeliveryStatus = 
@@ -56,7 +55,7 @@ export default function DeliveryManagement() {
   const fetchDeliveries = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from('sample_deliveries')
         .select(`
           id,
@@ -114,7 +113,7 @@ export default function DeliveryManagement() {
     fetchDeliveries();
 
     // Set up real-time subscription
-    const deliverySubscription = supabase
+    const deliverySubscription = supabaseClient
       .channel('delivery-changes')
       .on('postgres_changes', { 
         event: '*', 
@@ -126,13 +125,13 @@ export default function DeliveryManagement() {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(deliverySubscription);
+      supabaseClient.removeChannel(deliverySubscription);
     };
   }, []);
 
   const handleStatusUpdate = async (deliveryId: string, newStatus: DeliveryStatus) => {
     try {
-      const { error } = await supabase
+      const { error } = await supabaseClient
         .from('sample_deliveries')
         .update({ status: newStatus })
         .eq('id', deliveryId);
@@ -161,7 +160,7 @@ export default function DeliveryManagement() {
 
   const handleApproveParticipant = async (consumerId: string, approved: boolean) => {
     try {
-      const { error } = await supabase
+      const { error } = await supabaseClient
         .from('consumer_profiles')
         .update({ approved })
         .eq('id', consumerId);
@@ -197,7 +196,7 @@ export default function DeliveryManagement() {
     try {
       // Here we would call a Supabase Edge Function to send the email
       // For demo, we'll just update a notification field
-      const { error } = await supabase
+      const { error } = await supabaseClient
         .from('notifications')
         .insert({
           recipient_id: delivery.consumer.id,
@@ -336,7 +335,6 @@ export default function DeliveryManagement() {
           </div>
         </div>
 
-        {/* Route Optimization */}
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -384,7 +382,6 @@ export default function DeliveryManagement() {
         </Card>
 
         <div className="space-y-6">
-          {/* Filters */}
           <Card>
             <CardContent className="p-4">
               <div className="flex flex-col md:flex-row gap-4">
@@ -451,7 +448,6 @@ export default function DeliveryManagement() {
             </CardContent>
           </Card>
 
-          {/* Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="mb-4">
               <TabsTrigger value="all">Todos</TabsTrigger>

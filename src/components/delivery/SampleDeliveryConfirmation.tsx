@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Package, Truck, CheckCircle } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { supabaseClient } from "@/integrations/supabase/mock-client";
 
 interface SampleDeliveryProps {
   sampleId: string;
@@ -31,7 +31,7 @@ export function SampleDeliveryConfirmation({
     
     try {
       // Update delivery status in the database
-      const { error } = await supabase
+      const { error } = await supabaseClient
         .from('sample_deliveries')
         .update({ status: 'delivered' })
         .eq('id', sampleId);
@@ -42,7 +42,7 @@ export function SampleDeliveryConfirmation({
       setCurrentStatus('delivered');
       
       // Notify recruiter about the delivery confirmation
-      await supabase.from('notifications')
+      await supabaseClient.from('notifications')
         .insert({
           recipient_id: null, // Will be fetched from the survey
           survey_id: surveyId,
