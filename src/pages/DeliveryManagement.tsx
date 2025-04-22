@@ -11,7 +11,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
 import { supabaseClient } from "@/integrations/supabase/mock-client";
 
-// Define types for deliveries
+// Define tipos para entregas
 type DeliveryStatus = 
   | "preparing" 
   | "shipped" 
@@ -51,7 +51,7 @@ export default function DeliveryManagement() {
   const [loading, setLoading] = useState(true);
   const [locations, setLocations] = useState<string[]>([]);
 
-  // Fetch delivery data from Supabase
+  // Busca dados de entrega do Supabase
   const fetchDeliveries = async () => {
     setLoading(true);
     try {
@@ -77,8 +77,8 @@ export default function DeliveryManagement() {
 
       if (error) throw error;
 
-      // Format the data to match our interface
-      const formattedData: Delivery[] = data.map((item: any) => ({
+      // Formata os dados para corresponder à nossa interface
+      const formattedData: Delivery[] = data ? data.map((item: any) => ({
         id: item.id,
         name: item.name,
         code: item.code,
@@ -87,18 +87,18 @@ export default function DeliveryManagement() {
         status: item.status,
         trackingCode: item.tracking_code,
         surveyId: item.survey_id
-      }));
+      })) : [];
 
       setDeliveries(formattedData);
 
-      // Extract unique locations
+      // Extrai localizações únicas
       const uniqueLocations = Array.from(new Set(
-        formattedData.map(delivery => delivery.consumer.location)
+        formattedData.map(delivery => delivery.consumer?.location || '')
       )).filter(Boolean) as string[];
 
       setLocations(uniqueLocations);
     } catch (error) {
-      console.error('Error fetching deliveries:', error);
+      console.error('Erro ao buscar entregas:', error);
       toast({
         title: "Erro ao carregar dados",
         description: "Não foi possível carregar as entregas.",
@@ -112,7 +112,7 @@ export default function DeliveryManagement() {
   useEffect(() => {
     fetchDeliveries();
 
-    // Set up real-time subscription
+    // Configura assinatura em tempo real
     const deliverySubscription = supabaseClient
       .channel('delivery-changes')
       .on('postgres_changes', { 
@@ -131,10 +131,11 @@ export default function DeliveryManagement() {
 
   const handleStatusUpdate = async (deliveryId: string, newStatus: DeliveryStatus) => {
     try {
-      const { error } = await supabaseClient
+      const updateQuery = supabaseClient
         .from('sample_deliveries')
-        .update({ status: newStatus })
-        .eq('id', deliveryId);
+        .update({ status: newStatus });
+        
+      const { error } = await updateQuery.eq('id', deliveryId);
       
       if (error) throw error;
       
@@ -149,7 +150,7 @@ export default function DeliveryManagement() {
         description: `O status da entrega foi atualizado com sucesso para: ${getStatusLabel(newStatus)}`,
       });
     } catch (error) {
-      console.error('Error updating status:', error);
+      console.error('Erro ao atualizar status:', error);
       toast({
         title: "Erro ao atualizar status",
         description: "Não foi possível atualizar o status da entrega.",
@@ -160,10 +161,11 @@ export default function DeliveryManagement() {
 
   const handleApproveParticipant = async (consumerId: string, approved: boolean) => {
     try {
-      const { error } = await supabaseClient
+      const updateQuery = supabaseClient
         .from('consumer_profiles')
-        .update({ approved })
-        .eq('id', consumerId);
+        .update({ approved });
+        
+      const { error } = await updateQuery.eq('id', consumerId);
       
       if (error) throw error;
       
@@ -180,7 +182,7 @@ export default function DeliveryManagement() {
         description: `O status de aprovação do participante foi atualizado com sucesso.`,
       });
     } catch (error) {
-      console.error('Error updating approval status:', error);
+      console.error('Erro ao atualizar status de aprovação:', error);
       toast({
         title: "Erro ao atualizar status",
         description: "Não foi possível atualizar o status de aprovação do participante.",
@@ -194,8 +196,8 @@ export default function DeliveryManagement() {
     if (!delivery) return;
 
     try {
-      // Here we would call a Supabase Edge Function to send the email
-      // For demo, we'll just update a notification field
+      // Aqui chamaríamos uma Edge Function do Supabase para enviar o email
+      // Para demo, apenas atualizaremos um campo de notificação
       const { error } = await supabaseClient
         .from('notifications')
         .insert({
@@ -212,7 +214,7 @@ export default function DeliveryManagement() {
         description: "Email com informações de rastreio enviado ao consumidor.",
       });
     } catch (error) {
-      console.error('Error sending notification:', error);
+      console.error('Erro ao enviar notificação:', error);
       toast({
         title: "Erro ao enviar email",
         description: "Não foi possível enviar a notificação ao consumidor.",
@@ -267,8 +269,10 @@ export default function DeliveryManagement() {
     fetchDeliveries();
   };
 
-  // Calculate deliveries by city for route optimization
+  // Calcula entregas por cidade para otimização de rota
   const deliveriesByCity = deliveries.reduce((acc: Record<string, Delivery[]>, delivery) => {
+    if (!delivery.consumer?.location) return acc;
+    
     const city = delivery.consumer.location.split(',')[0].trim();
     if (!acc[city]) acc[city] = [];
     acc[city].push(delivery);

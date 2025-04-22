@@ -30,23 +30,24 @@ export function SampleDeliveryConfirmation({
     setIsLoading(true);
     
     try {
-      // Update delivery status in the database - our updated mock client will handle the ID type
-      const { error } = await supabaseClient
+      // Atualiza o status da entrega no banco de dados usando o cliente mock atualizado
+      const updateQuery = supabaseClient
         .from('sample_deliveries')
-        .update({ status: 'delivered' })
-        .eq('id', sampleId); 
+        .update({ status: 'delivered' });
+        
+      const { error } = await updateQuery.eq('id', sampleId);
       
       if (error) throw error;
       
-      // Update local state
+      // Atualiza o estado local
       setCurrentStatus('delivered');
       
-      // Notify recruiter about delivery confirmation
+      // Notifica o recrutador sobre a confirmação de entrega
       await supabaseClient.from('notifications')
         .insert({
-          recipient_id: null, // Will be fetched from the survey
+          recipient_id: null, // Será buscado a partir da pesquisa
           survey_id: surveyId,
-          message: `Sample ${code} was received by the participant`,
+          message: `A amostra ${code} foi recebida pelo participante`,
           type: 'delivery_confirmation',
           read: false
         });
@@ -56,7 +57,7 @@ export function SampleDeliveryConfirmation({
         description: "A pesquisa está agora disponível para você."
       });
     } catch (error) {
-      console.error("Error confirming delivery:", error);
+      console.error("Erro ao confirmar recebimento:", error);
       toast({
         title: "Erro ao confirmar recebimento",
         description: "Por favor tente novamente.",
@@ -67,7 +68,7 @@ export function SampleDeliveryConfirmation({
     }
   };
   
-  // Already delivered, show only status
+  // Já entregue, mostra apenas o status
   if (currentStatus === 'delivered' || currentStatus === 'completed') {
     return (
       <Card>
@@ -95,7 +96,7 @@ export function SampleDeliveryConfirmation({
     );
   }
   
-  // Not yet delivered, show confirmation button
+  // Ainda não entregue, mostra botão de confirmação
   return (
     <Card>
       <CardHeader className="pb-2">

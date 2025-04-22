@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Navbar } from "@/components/layout/navbar";
 import { Button } from "@/components/ui/button";
@@ -12,7 +11,6 @@ import { supabaseClient } from "@/integrations/supabase/mock-client";
 import { supabase } from "@/integrations/supabase/client";
 import { SampleDeliveryConfirmation } from "@/components/delivery/SampleDeliveryConfirmation";
 
-// Medallion levels for consumer profiles
 const LEVELS = [
   { name: "Bronze", min: 0, color: "bg-amber-600" },
   { name: "Prata", min: 100, color: "bg-gray-400" },
@@ -21,22 +19,32 @@ const LEVELS = [
   { name: "Diamante", min: 1000, color: "bg-purple-400" }
 ];
 
-// Use simple types to avoid excessive type instantiation
 type DeliveryData = {
   id: string;
   code: string;
   name: string;
   status: string;
   surveys?: {
-    id: string;
+    id?: string;
     title?: string;
   }
+};
+
+type ConsumerProfileData = {
+  name: string;
+  email: string;
+  points: number;
+  completedSurveys: number;
+  location: string;
+  allergies: string;
+  preferences: string;
+  memberSince: string;
 };
 
 export default function ConsumerProfile() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("perfil");
-  const [profile, setProfile] = useState({
+  const [profile, setProfile] = useState<ConsumerProfileData>({
     name: "Maria Silva",
     email: "maria.silva@exemplo.com",
     points: 320,
@@ -48,7 +56,6 @@ export default function ConsumerProfile() {
   });
   const [pendingDeliveries, setPendingDeliveries] = useState<DeliveryData[]>([]);
   
-  // Consumer achievements
   const achievements = [
     { 
       id: 1, 
@@ -79,8 +86,7 @@ export default function ConsumerProfile() {
       earned: false 
     },
   ];
-  
-  // Survey history
+
   const surveyHistory = [
     {
       id: "s-1",
@@ -120,7 +126,6 @@ export default function ConsumerProfile() {
     }
   ];
 
-  // Available rewards
   const rewards = [
     {
       id: "r-1",
@@ -152,7 +157,6 @@ export default function ConsumerProfile() {
     }
   ];
 
-  // Get consumer's current level based on points
   const getCurrentLevel = () => {
     const sortedLevels = [...LEVELS].sort((a, b) => b.min - a.min);
     return sortedLevels.find(level => profile.points >= level.min) || LEVELS[0];
@@ -162,7 +166,6 @@ export default function ConsumerProfile() {
   const nextLevel = LEVELS.find(level => level.min > profile.points);
   const pointsForNextLevel = nextLevel ? nextLevel.min - profile.points : 0;
   
-  // Progress to next level (percentage)
   const getProgressPercentage = () => {
     if (!nextLevel) return 100;
     
@@ -175,7 +178,6 @@ export default function ConsumerProfile() {
     return Math.round((pointsEarned / totalPointsNeeded) * 100);
   };
 
-  // Handle reward redemption
   const handleRedeemReward = (rewardId: string) => {
     const reward = rewards.find(r => r.id === rewardId);
     if (!reward) return;
@@ -189,31 +191,31 @@ export default function ConsumerProfile() {
       return;
     }
     
-    // Here you would integrate with Supabase to update points and log redemption
     toast({
       title: "Recompensa resgatada!",
       description: `Você resgatou: ${reward.title}. Um e-mail de confirmação foi enviado.`
     });
   };
 
-  // Load profile data and pending deliveries
   const loadProfileData = async () => {
     try {
-      // Get user session
-      const { data: sessionData } = await supabase.auth.getSession();
-      const userId = sessionData?.session?.user.id;
+      const sessionPromise = await supabase.auth.getSession();
+      const userId = sessionPromise.data?.session?.user.id;
       
       if (!userId) return;
       
-      // Get profile data - use any to bypass type checking
       try {
-        const { data: profileData, error: profileError } = await supabaseClient
+        const profileResponse = await supabaseClient
           .from('consumer_profiles')
-          .select('*')
-          .eq('user_id', userId)
-          .single() as { data: any, error: any };
+          .select('*');
+          
+        const profileQuery = profileResponse.eq('user_id', userId);
+        const { data: profileData, error: profileError } = await profileQuery.single();
         
-        if (profileError) throw profileError;
+        if (profileError) {
+          console.error("Erro ao carregar perfil:", profileError);
+          return;
+        }
         
         if (profileData && typeof profileData === 'object') {
           setProfile(prev => ({
@@ -231,12 +233,11 @@ export default function ConsumerProfile() {
           }));
         }
       } catch (e) {
-        console.error("Error loading profile:", e);
+        console.error("Erro ao processar dados do perfil:", e);
       }
       
-      // Get pending deliveries with a simpler approach
       try {
-        const { data: deliveries, error: deliveriesError } = await supabaseClient
+        const deliveriesResponse = await supabaseClient
           .from('sample_deliveries')
           .select(`
             id,
@@ -244,61 +245,78 @@ export default function ConsumerProfile() {
             name,
             status,
             surveys(id, title)
-          `)
-          .eq('consumer_id', userId)
-          .in('status', ['shipped', 'in-transit']) as { data: any, error: any };
+          `);
+          
+        const deliveriesWithConsumer = deliveriesResponse.eq('consumer_id', userId);
+        const { data: deliveriesData, error: deliveriesError } = await deliveriesWithConsumer.in('status', ['shipped', 'in-transit']);
         
-        if (deliveriesError) throw deliveriesError;
+        if (deliveriesError) {
+          console.error("Erro ao carregar entregas:", deliveriesError);
+          return;
+        }
         
-        if (deliveries && Array.isArray(deliveries) && deliveries.length > 0) {
-          // Make sure we have proper data and convert to our DeliveryData type
-          const validDeliveries = deliveries.filter((d: any) => 
-            d && typeof d === 'object' && d.id && d.code && d.name && d.status
-          ) as DeliveryData[];
+        if (deliveriesData && Array.isArray(deliveriesData)) {
+          const validDeliveries = deliveriesData
+            .filter(d => d && typeof d === 'object' && d.id && d.code && d.name && d.status)
+            .map(d => ({
+              id: d.id,
+              code: d.code,
+              name: d.name,
+              status: d.status,
+              surveys: d.surveys
+            }));
           
           setPendingDeliveries(validDeliveries);
         }
       } catch (e) {
-        console.error("Error loading deliveries:", e);
+        console.error("Erro ao processar entregas:", e);
       }
       
     } catch (error) {
-      console.error("Error in loadProfileData:", error);
+      console.error("Erro em loadProfileData:", error);
     }
   };
 
   useEffect(() => {
     loadProfileData();
     
-    // Set up subscription for real-time updates
     const setupRealtimeSubscription = async () => {
-      const { data } = await supabase.auth.getSession();
-      const userId = data.session?.user.id || 'anonymous';
-      const channelName = `profile-delivery-updates-${userId}`;
-      
-      const deliveriesSubscription = supabase
-        .channel(channelName)
-        .on('postgres_changes', 
-          { 
-            event: '*', 
-            schema: 'public', 
-            table: 'sample_deliveries'
-          },
-          () => {
-            loadProfileData();
-          }
-        )
-        .subscribe();
+      try {
+        const { data } = await supabase.auth.getSession();
+        const userId = data.session?.user.id || 'anonymous';
+        const channelName = `profile-delivery-updates-${userId}`;
         
-      return () => {
-        supabase.removeChannel(deliveriesSubscription);
-      };
+        const deliveriesSubscription = supabase
+          .channel(channelName)
+          .on('postgres_changes', 
+            { 
+              event: '*', 
+              schema: 'public', 
+              table: 'sample_deliveries'
+            },
+            () => {
+              loadProfileData();
+            }
+          )
+          .subscribe();
+          
+        return () => {
+          supabase.removeChannel(deliveriesSubscription);
+        };
+      } catch (error) {
+        console.error("Erro ao configurar assinatura em tempo real:", error);
+        return () => {};
+      }
     };
     
-    setupRealtimeSubscription();
+    const unsubscribe = setupRealtimeSubscription();
+    return () => {
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    };
   }, []);
 
-  // Render helper for status badges
   const renderStatusBadge = (status: string) => {
     switch (status) {
       case "completed":
@@ -332,7 +350,6 @@ export default function ConsumerProfile() {
           <p className="text-muted-foreground">Gerencie seu perfil e visualize seu histórico de pesquisas</p>
         </div>
 
-        {/* Pending Deliveries Alert (if any) */}
         {pendingDeliveries.length > 0 && (
           <div className="mb-8">
             <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
