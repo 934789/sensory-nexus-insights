@@ -7,6 +7,8 @@ interface MockResponse<T = any> {
   error: Error | null;
 }
 
+type QueryMethod = 'select' | 'eq' | 'neq' | 'in' | 'order' | 'limit' | 'single';
+
 // Simple mock implementation that wraps the actual Supabase client
 // but provides safety against type errors
 class SafeSupabaseMock {
@@ -31,7 +33,10 @@ class SafeSupabaseMock {
     return this.client.channel(channel);
   }
 
-  removeChannel = this.client.removeChannel;
+  // Ensure this is only accessed after client initialization
+  get removeChannel() {
+    return this.client.removeChannel.bind(this.client);
+  }
 }
 
 // Builder for table operations that handles type safety

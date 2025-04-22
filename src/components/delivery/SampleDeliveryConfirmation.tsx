@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,10 +31,11 @@ export function SampleDeliveryConfirmation({
     
     try {
       // Update the delivery status in the database using the updated mock client
-      const updateResult = await supabaseClient
+      const updateQuery = supabaseClient
         .from('sample_deliveries')
-        .eq('id', sampleId)
-        .update({ status: 'delivered' });
+        .eq('id', sampleId);
+      
+      const updateResult = await updateQuery.update({ status: 'delivered' });
         
       if (updateResult.error) throw updateResult.error;
       
