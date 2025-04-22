@@ -31,9 +31,12 @@ const mockClient = {
         return supabase.from(table).delete();
       },
       eq: (column: string, value: any) => {
-        // Handle both string and number IDs
+        // Handle both string and number IDs by ensuring they're the correct type
+        const processedValue = column === 'id' && typeof value === 'string' && !isNaN(Number(value)) 
+          ? Number(value) 
+          : value;
         // @ts-ignore
-        return supabase.from(table).eq(column, value);
+        return supabase.from(table).eq(column, processedValue);
       },
       neq: (column: string, value: any) => {
         // @ts-ignore

@@ -20,6 +20,18 @@ const LEVELS = [
   { name: "Diamante", min: 1000, color: "bg-purple-400" }
 ];
 
+// Use simple types to avoid excessive type instantiation
+type DeliveryData = {
+  id: string;
+  code: string;
+  name: string;
+  status: string;
+  surveys?: {
+    id: string;
+    title?: string;
+  }
+};
+
 export default function ConsumerProfile() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("perfil");
@@ -33,7 +45,7 @@ export default function ConsumerProfile() {
     preferences: "Produtos veganos, Baixo açúcar",
     memberSince: "Janeiro 2023"
   });
-  const [pendingDeliveries, setPendingDeliveries] = useState<any[]>([]);
+  const [pendingDeliveries, setPendingDeliveries] = useState<DeliveryData[]>([]);
   
   // Consumer achievements
   const achievements = [
@@ -192,59 +204,63 @@ export default function ConsumerProfile() {
       
       if (!userId) return;
       
-      // Get profile data - Using Promise to avoid deep type instantiation
-      const profilePromise = supabaseClient
-        .from('consumer_profiles')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
+      // Get profile data without using complex types
+      try {
+        // @ts-ignore - use any to bypass complex type issues
+        const { data: profileData, error: profileError } = await supabaseClient
+          .from('consumer_profiles')
+          .select('*')
+          .eq('user_id', userId)
+          .single();
         
-      const { data: profileData, error: profileError } = await profilePromise;
-      
-      if (profileError) throw profileError;
-      
-      if (profileData) {
-        // Treat profileData as a generic object with any property
-        const typedProfileData = profileData as Record<string, any>;
+        if (profileError) throw profileError;
         
-        setProfile(prev => ({
-          ...prev,
-          name: typedProfileData.name || prev.name,
-          email: typedProfileData.email || prev.email,
-          points: typedProfileData.points || prev.points,
-          completedSurveys: typedProfileData.completed_surveys || prev.completedSurveys,
-          location: typedProfileData.location || prev.location,
-          allergies: typedProfileData.allergies || prev.allergies,
-          preferences: typedProfileData.preferences || prev.preferences,
-          memberSince: typedProfileData.created_at 
-            ? new Date(typedProfileData.created_at).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
-            : prev.memberSince
-        }));
+        if (profileData) {
+          setProfile(prev => ({
+            ...prev,
+            name: profileData.name || prev.name,
+            email: profileData.email || prev.email,
+            points: profileData.points || prev.points,
+            completedSurveys: profileData.completed_surveys || prev.completedSurveys,
+            location: profileData.location || prev.location,
+            allergies: profileData.allergies || prev.allergies,
+            preferences: profileData.preferences || prev.preferences,
+            memberSince: profileData.created_at 
+              ? new Date(profileData.created_at).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+              : prev.memberSince
+          }));
+        }
+      } catch (e) {
+        console.error("Error loading profile:", e);
       }
       
-      // Get pending deliveries - Using Promise to avoid deep type instantiation
-      const deliveriesPromise = supabaseClient
-        .from('sample_deliveries')
-        .select(`
-          id,
-          code,
-          name,
-          status,
-          surveys(id, title)
-        `)
-        .eq('consumer_id', userId)
-        .in('status', ['shipped', 'in-transit']);
+      // Get pending deliveries with a simpler approach
+      try {
+        // @ts-ignore - use any to bypass complex type issues
+        const { data: deliveries, error: deliveriesError } = await supabaseClient
+          .from('sample_deliveries')
+          .select(`
+            id,
+            code,
+            name,
+            status,
+            surveys(id, title)
+          `)
+          .eq('consumer_id', userId)
+          .in('status', ['shipped', 'in-transit']);
         
-      const { data: deliveries, error: deliveriesError } = await deliveriesPromise;
-      
-      if (deliveriesError) throw deliveriesError;
-      
-      if (deliveries && Array.isArray(deliveries) && deliveries.length > 0) {
-        setPendingDeliveries(deliveries as any[]);
+        if (deliveriesError) throw deliveriesError;
+        
+        if (deliveries && Array.isArray(deliveries) && deliveries.length > 0) {
+          // Cast to our simple DeliveryData type to avoid complex type issues
+          setPendingDeliveries(deliveries as DeliveryData[]);
+        }
+      } catch (e) {
+        console.error("Error loading deliveries:", e);
       }
       
     } catch (error) {
-      console.error("Error loading profile:", error);
+      console.error("Error in loadProfileData:", error);
     }
   };
 
@@ -327,10 +343,10 @@ export default function ConsumerProfile() {
                 <SampleDeliveryConfirmation
                   key={delivery.id}
                   sampleId={delivery.id}
-                  name={delivery.name || delivery.surveys?.title}
-                  status={delivery.status}
+                  name={delivery.name || delivery.surveys?.title || ""}
+                  status={delivery.status as any}
                   code={delivery.code}
-                  surveyId={delivery.surveys?.id}
+                  surveyId={delivery.surveys?.id || ""}
                 />
               ))}
             </div>
