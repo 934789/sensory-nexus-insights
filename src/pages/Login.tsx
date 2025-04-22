@@ -403,6 +403,15 @@ export default function Login() {
           ) : (
             <p>Já tem uma conta? <Button variant="link" className="p-0" onClick={() => setActiveTab("login")}>Faça login</Button></p>
           )}
+          <div className="mt-2">
+            <Button
+              variant="link"
+              className="p-0 text-xs"
+              onClick={() => window.location.assign('/admin-setup')}
+            >
+              Criar conta admin (apenas para teste)
+            </Button>
+          </div>
         </div>
       </div>
     </div>

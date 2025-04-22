@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -19,10 +18,10 @@ import RecruiterProfile from "./pages/RecruiterProfile";
 import ConsumerProfile from "./pages/ConsumerProfile";
 import DeliveryManagement from "./pages/DeliveryManagement";
 import Analytics from "./pages/Analytics";
+import AdminUserSetup from "./pages/AdminUserSetup";
 import { useState, useEffect } from "react";
 import { supabase } from "./integrations/supabase/client";
 
-// Auth protection component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   
@@ -44,7 +43,6 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   }, []);
   
   if (isAuthenticated === null) {
-    // Loading state
     return <div className="flex h-screen items-center justify-center">Carregando...</div>;
   }
   
@@ -69,8 +67,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
-          
-          {/* Protected routes */}
+          <Route path="/admin-setup" element={<AdminUserSetup />} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/surveys" element={<ProtectedRoute><Surveys /></ProtectedRoute>} />
           <Route path="/surveys/create" element={<ProtectedRoute><SurveyCreate /></ProtectedRoute>} />
