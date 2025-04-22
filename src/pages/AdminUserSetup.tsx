@@ -25,14 +25,22 @@ export default function AdminUserSetup() {
       const userId = data.user?.id;
       if (!userId) throw new Error("Não foi possível obter o ID do usuário");
 
-      // Atribuir papéis 'admin' e 'recruiter'
-      const { error: roleErr } = await supabase
-        .from("user_roles")
-        .insert([
-          { user_id: userId, role: "admin" },
-          { user_id: userId, role: "recruiter" },
-        ]);
+      // Inserir diretamente no banco de dados usando função rpc para contornar as políticas RLS
+      // Isso evita o problema de recursão infinita
+      const { error: roleErr } = await supabase.rpc('add_user_role', {
+        user_id_param: userId,
+        role_param: 'admin'
+      });
+      
       if (roleErr) throw roleErr;
+      
+      // Adicionar também papel de recrutador
+      const { error: recruiterRoleErr } = await supabase.rpc('add_user_role', {
+        user_id_param: userId,
+        role_param: 'recruiter'
+      });
+      
+      if (recruiterRoleErr) throw recruiterRoleErr;
 
       toast({
         title: "Conta admin criada com sucesso!",
