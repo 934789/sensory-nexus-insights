@@ -4,168 +4,177 @@ import { supabase } from './client';
 // Define common return types for our mock client
 interface MockResponse<T = any> {
   data: T | null;
-  error: any | null;
+  error: Error | null;
 }
 
-// Type for query builder methods
-type QueryMethod = 'eq' | 'neq' | 'in' | 'order' | 'limit' | 'single';
+// Simple mock implementation that wraps the actual Supabase client
+// but provides safety against type errors
+class SafeSupabaseMock {
+  private client;
+  
+  constructor() {
+    this.client = supabase;
+  }
 
-class MockQueryBuilder {
+  // Safe from() method that won't cause type errors
+  from(table: string) {
+    return new TableQueryBuilder(this.client, table);
+  }
+
+  // Pass through auth methods directly
+  get auth() {
+    return this.client.auth;
+  }
+
+  // Pass through channel methods
+  channel(channel: string) {
+    return this.client.channel(channel);
+  }
+
+  removeChannel = this.client.removeChannel;
+}
+
+// Builder for table operations that handles type safety
+class TableQueryBuilder {
+  private client;
   private tableName: string;
-  private methods: Array<{
-    name: QueryMethod;
-    args: any[];
-  }> = [];
+  private queryFilters: Array<{method: string, args: any[]}> = [];
 
-  constructor(tableName: string) {
+  constructor(client: any, tableName: string) {
+    this.client = client;
     this.tableName = tableName;
   }
 
-  // Generic method to add a query method and return this builder
-  private addMethod(name: QueryMethod, ...args: any[]): MockQueryBuilder {
-    this.methods.push({ name, args });
-    return this;
-  }
-
   // Select method
-  select(query?: string): MockQueryBuilder {
-    return this.addMethod('select', query);
-  }
-
-  // Filter methods
-  eq(column: string, value: any): MockQueryBuilder {
-    return this.addMethod('eq', column, value);
-  }
-
-  neq(column: string, value: any): MockQueryBuilder {
-    return this.addMethod('neq', column, value);
-  }
-
-  in(column: string, values: any[]): MockQueryBuilder {
-    return this.addMethod('in', column, values);
-  }
-
-  // Order method
-  order(column: string, options?: { ascending?: boolean }): MockQueryBuilder {
-    return this.addMethod('order', column, options);
-  }
-
-  // Limit method
-  limit(count: number): MockQueryBuilder {
-    return this.addMethod('limit', count);
+  select(columns?: string) {
+    this.queryFilters.push({method: 'select', args: [columns]});
     return this;
   }
 
-  // Single result method
-  single(): MockQueryBuilder {
-    return this.addMethod('single', null);
+  // Filter by equality
+  eq(column: string, value: any) {
+    this.queryFilters.push({method: 'eq', args: [column, value]});
+    return this;
   }
 
-  // This does all the mock query execution at the end of the chain
+  // Filter by inequality
+  neq(column: string, value: any) {
+    this.queryFilters.push({method: 'neq', args: [column, value]});
+    return this;
+  }
+
+  // Filter by "in" values
+  in(column: string, values: any[]) {
+    this.queryFilters.push({method: 'in', args: [column, values]});
+    return this;
+  }
+
+  // Order results
+  order(column: string, options?: { ascending?: boolean }) {
+    this.queryFilters.push({method: 'order', args: [column, options]});
+    return this;
+  }
+
+  // Limit results
+  limit(count: number) {
+    this.queryFilters.push({method: 'limit', args: [count]});
+    return this;
+  }
+
+  // Get single result
+  single() {
+    this.queryFilters.push({method: 'single', args: []});
+    return this;
+  }
+
+  // Execute the query by applying all filters
   async then(onFulfilled: (value: MockResponse) => any): Promise<any> {
-    // In a real implementation, this would properly chain all the query methods
-    // For simplicity, we'll just return a successful mock response
     try {
-      // Attempt to execute the real query against Supabase
-      let query = supabase.from(this.tableName);
+      // Start with the base query
+      let query = this.client.from(this.tableName);
       
-      // Apply all methods in the chain
-      for (const method of this.methods) {
-        if (method.name === 'select') {
-          query = (query as any).select(method.args[0]);
-        } else if (method.name === 'eq') {
-          query = (query as any).eq(method.args[0], method.args[1]);
-        } else if (method.name === 'neq') {
-          query = (query as any).neq(method.args[0], method.args[1]);
-        } else if (method.name === 'in') {
-          query = (query as any).in(method.args[0], method.args[1]);
-        } else if (method.name === 'order') {
-          query = (query as any).order(method.args[0], method.args[1]);
-        } else if (method.name === 'limit') {
-          query = (query as any).limit(method.args[0]);
-        } else if (method.name === 'single') {
-          query = (query as any).single();
+      // Apply all stored filters in order
+      for (const filter of this.queryFilters) {
+        if (typeof query[filter.method] === 'function') {
+          query = query[filter.method](...filter.args);
         }
       }
 
-      // Execute the query
+      // Execute the query against the real Supabase client
       const result = await query;
       return onFulfilled(result);
     } catch (error) {
       console.error(`Error executing query on ${this.tableName}:`, error);
-      const response: MockResponse = { data: null, error };
+      const mockError = error instanceof Error ? error : new Error(String(error));
+      const response: MockResponse = { data: null, error: mockError };
       return onFulfilled(response);
     }
   }
 
-  // Execute methods for insert, update, upsert, delete
+  // Insert data
   async insert(values: any, options?: any): Promise<MockResponse> {
     try {
-      const { data, error } = await supabase.from(this.tableName).insert(values, options);
-      return { data, error };
+      const result = await this.client.from(this.tableName).insert(values, options);
+      return result;
     } catch (error) {
       console.error(`Error inserting into ${this.tableName}:`, error);
-      return { data: null, error };
+      const mockError = error instanceof Error ? error : new Error(String(error));
+      return { data: null, error: mockError };
     }
   }
 
+  // Update data
   async update(values: any): Promise<MockResponse> {
     try {
-      // Apply all methods in the chain
-      let query = supabase.from(this.tableName).update(values);
-
-      for (const method of this.methods) {
-        if (method.name === 'eq') {
-          query = query.eq(method.args[0], method.args[1]);
+      let query = this.client.from(this.tableName).update(values);
+      
+      // Apply any eq filters
+      for (const filter of this.queryFilters) {
+        if (filter.method === 'eq' && typeof query.eq === 'function') {
+          query = query.eq(filter.args[0], filter.args[1]);
         }
       }
-
-      const { data, error } = await query;
-      return { data, error };
+      
+      return await query;
     } catch (error) {
       console.error(`Error updating ${this.tableName}:`, error);
-      return { data: null, error };
+      const mockError = error instanceof Error ? error : new Error(String(error));
+      return { data: null, error: mockError };
     }
   }
 
+  // Upsert data
   async upsert(values: any, options?: any): Promise<MockResponse> {
     try {
-      const { data, error } = await supabase.from(this.tableName).upsert(values, options);
-      return { data, error };
+      const result = await this.client.from(this.tableName).upsert(values, options);
+      return result;
     } catch (error) {
       console.error(`Error upserting into ${this.tableName}:`, error);
-      return { data: null, error };
+      const mockError = error instanceof Error ? error : new Error(String(error));
+      return { data: null, error: mockError };
     }
   }
 
+  // Delete data
   async delete(): Promise<MockResponse> {
     try {
-      // Apply all methods in the chain
-      let query = supabase.from(this.tableName).delete();
-
-      for (const method of this.methods) {
-        if (method.name === 'eq') {
-          query = query.eq(method.args[0], method.args[1]);
+      let query = this.client.from(this.tableName).delete();
+      
+      // Apply any eq filters
+      for (const filter of this.queryFilters) {
+        if (filter.method === 'eq' && typeof query.eq === 'function') {
+          query = query.eq(filter.args[0], filter.args[1]);
         }
       }
-
-      const { data, error } = await query;
-      return { data, error };
+      
+      return await query;
     } catch (error) {
       console.error(`Error deleting from ${this.tableName}:`, error);
-      return { data: null, error };
+      const mockError = error instanceof Error ? error : new Error(String(error));
+      return { data: null, error: mockError };
     }
   }
 }
 
-// The mock client itself
-const mockClient = {
-  from: (table: string) => new MockQueryBuilder(table),
-  auth: supabase.auth,
-  channel: (channel: string) => {
-    return supabase.channel(channel);
-  },
-  removeChannel: supabase.removeChannel,
-};
-
-export const supabaseClient = mockClient;
+// Create and export the mock client instance
+export const supabaseClient = new SafeSupabaseMock();

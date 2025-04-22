@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,22 +29,22 @@ export function SampleDeliveryConfirmation({
     setIsLoading(true);
     
     try {
-      // Atualiza o status da entrega no banco de dados usando o cliente mock atualizado
+      // Update the delivery status in the database using the updated mock client
       const updateResult = await supabaseClient
         .from('sample_deliveries')
-        .update({ status: 'delivered' })
-        .eq('id', sampleId);
+        .eq('id', sampleId)
+        .update({ status: 'delivered' });
         
       if (updateResult.error) throw updateResult.error;
       
-      // Atualiza o estado local
+      // Update local state
       setCurrentStatus('delivered');
       
-      // Notifica o recrutador sobre a confirmação de entrega
+      // Notify the recruiter about the delivery confirmation
       const notificationResult = await supabaseClient
         .from('notifications')
         .insert({
-          recipient_id: null, // Será buscado a partir da pesquisa
+          recipient_id: null, // Will be looked up from the survey
           survey_id: surveyId,
           message: `A amostra ${code} foi recebida pelo participante`,
           type: 'delivery_confirmation',
@@ -72,7 +71,7 @@ export function SampleDeliveryConfirmation({
     }
   };
   
-  // Já entregue, mostra apenas o status
+  // Already delivered, only show status
   if (currentStatus === 'delivered' || currentStatus === 'completed') {
     return (
       <Card>
@@ -100,7 +99,7 @@ export function SampleDeliveryConfirmation({
     );
   }
   
-  // Ainda não entregue, mostra botão de confirmação
+  // Not yet delivered, show confirmation button
   return (
     <Card>
       <CardHeader className="pb-2">

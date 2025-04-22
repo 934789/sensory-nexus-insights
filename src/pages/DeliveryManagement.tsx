@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Navbar } from "@/components/layout/navbar";
 import { Button } from "@/components/ui/button";
@@ -12,7 +11,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
 import { supabaseClient } from "@/integrations/supabase/mock-client";
 
-// Define tipos para entregas
+// Define types for deliveries
 type DeliveryStatus = 
   | "preparing" 
   | "shipped" 
@@ -52,11 +51,11 @@ export default function DeliveryManagement() {
   const [loading, setLoading] = useState(true);
   const [locations, setLocations] = useState<string[]>([]);
 
-  // Busca dados de entrega do Supabase
+  // Fetch delivery data from Supabase
   const fetchDeliveries = async () => {
     setLoading(true);
     try {
-      const result = await supabaseClient
+      const query = supabaseClient
         .from('sample_deliveries')
         .select(`
           id,
@@ -76,12 +75,12 @@ export default function DeliveryManagement() {
         `)
         .order('scheduled_date', { ascending: false });
 
-      const { data, error } = result;
+      const result = await query;
       
-      if (error) throw error;
+      if (result.error) throw result.error;
 
-      // Formata os dados para corresponder à nossa interface
-      const formattedData: Delivery[] = data ? data.map((item: any) => ({
+      // Format data to match our interface
+      const formattedData: Delivery[] = Array.isArray(result.data) ? result.data.map((item: any) => ({
         id: item.id,
         name: item.name,
         code: item.code,
@@ -94,7 +93,7 @@ export default function DeliveryManagement() {
 
       setDeliveries(formattedData);
 
-      // Extrai localizações únicas
+      // Extract unique locations
       const uniqueLocations = Array.from(new Set(
         formattedData.map(delivery => delivery.consumer?.location || '')
       )).filter(Boolean) as string[];
@@ -115,7 +114,7 @@ export default function DeliveryManagement() {
   useEffect(() => {
     fetchDeliveries();
 
-    // Configura assinatura em tempo real
+    // Set up real-time subscription
     const deliverySubscription = supabaseClient
       .channel('delivery-changes')
       .on('postgres_changes', { 
@@ -134,14 +133,14 @@ export default function DeliveryManagement() {
 
   const handleStatusUpdate = async (deliveryId: string, newStatus: DeliveryStatus) => {
     try {
-      const result = await supabaseClient
+      const updateQuery = supabaseClient
         .from('sample_deliveries')
-        .update({ status: newStatus })
-        .eq('id', deliveryId);
+        .eq('id', deliveryId)
+        .update({ status: newStatus });
         
-      const { error } = result;
+      const result = await updateQuery;
       
-      if (error) throw error;
+      if (result.error) throw result.error;
       
       setDeliveries(prev => 
         prev.map(item => 
@@ -165,14 +164,14 @@ export default function DeliveryManagement() {
 
   const handleApproveParticipant = async (consumerId: string, approved: boolean) => {
     try {
-      const result = await supabaseClient
+      const updateQuery = supabaseClient
         .from('consumer_profiles')
-        .update({ approved })
-        .eq('id', consumerId);
+        .eq('id', consumerId)
+        .update({ approved });
         
-      const { error } = result;
+      const result = await updateQuery;
       
-      if (error) throw error;
+      if (result.error) throw result.error;
       
       setDeliveries(prev => 
         prev.map(item => 
@@ -201,8 +200,8 @@ export default function DeliveryManagement() {
     if (!delivery) return;
 
     try {
-      // Aqui chamaríamos uma Edge Function do Supabase para enviar o email
-      // Para demo, apenas atualizaremos um campo de notificação
+      // Here we would call a Supabase Edge Function to send the email
+      // For demo, we'll just update a notification field
       const { error } = await supabaseClient
         .from('notifications')
         .insert({
@@ -274,7 +273,7 @@ export default function DeliveryManagement() {
     fetchDeliveries();
   };
 
-  // Calcula entregas por cidade para otimização de rota
+  // Calculate deliveries by city for route optimization
   const deliveriesByCity = deliveries.reduce((acc: Record<string, Delivery[]>, delivery) => {
     if (!delivery.consumer?.location) return acc;
     
@@ -344,6 +343,7 @@ export default function DeliveryManagement() {
           </div>
         </div>
 
+        {/* Optimized Routes Card */}
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -390,6 +390,7 @@ export default function DeliveryManagement() {
           </CardContent>
         </Card>
 
+        {/* Filter Card */}
         <div className="space-y-6">
           <Card>
             <CardContent className="p-4">
@@ -457,6 +458,7 @@ export default function DeliveryManagement() {
             </CardContent>
           </Card>
 
+          {/* Tabs and deliveries list */}
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="mb-4">
               <TabsTrigger value="all">Todos</TabsTrigger>
@@ -482,6 +484,7 @@ export default function DeliveryManagement() {
                 </Card>
               ) : (
                 <div className="space-y-4">
+                  {/* List of deliveries */}
                   {filteredDeliveries.map(delivery => (
                     <Card key={delivery.id}>
                       <CardContent className="p-0">

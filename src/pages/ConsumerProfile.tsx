@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/components/ui/use-toast";
 import { User, Star, Calendar, Clock, Award, Gift, ChartBar, Package } from "lucide-react";
 import { supabaseClient } from "@/integrations/supabase/mock-client";
@@ -205,10 +205,12 @@ export default function ConsumerProfile() {
       if (!userId) return;
       
       try {
-        const profileResult = await supabaseClient
+        const profileQuery = supabaseClient
           .from('consumer_profiles')
           .select('*')
           .eq('user_id', userId);
+        
+        const profileResult = await profileQuery;
         
         if (profileResult.error) {
           console.error("Erro ao carregar perfil:", profileResult.error);
@@ -237,7 +239,7 @@ export default function ConsumerProfile() {
       }
       
       try {
-        const deliveriesResult = await supabaseClient
+        const deliveriesQuery = supabaseClient
           .from('sample_deliveries')
           .select(`
             id,
@@ -249,6 +251,8 @@ export default function ConsumerProfile() {
           .eq('consumer_id', userId)
           .in('status', ['shipped', 'in-transit']);
         
+        const deliveriesResult = await deliveriesQuery;
+        
         if (deliveriesResult.error) {
           console.error("Erro ao carregar entregas:", deliveriesResult.error);
           return;
@@ -256,15 +260,17 @@ export default function ConsumerProfile() {
         
         const deliveriesData = deliveriesResult.data || [];
         
-        const validDeliveries: DeliveryData[] = deliveriesData
-          .filter((d: any) => d && typeof d === 'object' && d.id && d.code && d.name && d.status)
-          .map((d: any) => ({
-            id: d.id,
-            code: d.code,
-            name: d.name,
-            status: d.status,
-            surveys: d.surveys
-          }));
+        const validDeliveries: DeliveryData[] = Array.isArray(deliveriesData) 
+          ? deliveriesData
+              .filter((d: any) => d && typeof d === 'object' && d.id && d.code && d.name && d.status)
+              .map((d: any) => ({
+                id: d.id,
+                code: d.code,
+                name: d.name,
+                status: d.status,
+                surveys: d.surveys
+              }))
+          : [];
         
         setPendingDeliveries(validDeliveries);
       } catch (e) {
@@ -357,7 +363,7 @@ export default function ConsumerProfile() {
                 <SampleDeliveryConfirmation
                   key={delivery.id}
                   sampleId={delivery.id}
-                  name={delivery.name || delivery.surveys?.title || ""}
+                  name={delivery.name}
                   status={delivery.status as any}
                   code={delivery.code}
                   surveyId={delivery.surveys?.id || ""}
