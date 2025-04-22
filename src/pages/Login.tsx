@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Lock, Mail, User, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -23,49 +24,129 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [userType, setUserType] = useState("recruiter");
   const [activeTab, setActiveTab] = useState("login");
+  
+  // Registration fields
+  const [name, setName] = useState("");
+  const [registerEmail, setRegisterEmail] = useState("");
+  const [registerPassword, setRegisterPassword] = useState("");
+  const [allergies, setAllergies] = useState("");
+  const [preferences, setPreferences] = useState("");
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  
+  // Check if user is already logged in
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data } = await supabase.auth.getSession();
+      
+      if (data.session) {
+        // Redirect based on user type (stored in user metadata)
+        const userType = data.session.user.user_metadata?.user_type || 'consumer';
+        
+        if (userType === 'recruiter') {
+          navigate("/dashboard");
+        } else {
+          navigate("/consumer-profile");
+        }
+      }
+    };
+    
+    checkAuth();
+  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
 
-    // Simulate login validation
-    if (!email || !password) {
-      setError("Por favor, preencha todos os campos.");
-      setIsLoading(false);
-      return;
-    }
-
-    // Simulate login delay
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    // Mock credentials for demo
-    if (email === "demo@sensory.com" && password === "password") {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      
+      if (error) throw error;
+      
       toast({
         title: "Login realizado com sucesso!",
-        description: userType === "recruiter" 
+        description: data.user?.user_metadata?.user_type === "recruiter" 
           ? "Bem-vindo(a) ao painel de recrutador."
           : "Bem-vindo(a) ao seu perfil de consumidor.",
       });
       
+      // Redirect based on user type
+      if (data.user?.user_metadata?.user_type === "recruiter") {
+        navigate("/dashboard");
+      } else {
+        navigate("/consumer-profile");
+      }
+      
+    } catch (error: any) {
+      setError(error.message || "Erro ao fazer login. Verifique suas credenciais.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!termsAccepted) {
+      setError("É necessário aceitar os termos de uso para continuar.");
+      return;
+    }
+    
+    setIsLoading(true);
+    setError("");
+    
+    try {
+      // Register user with Supabase
+      const { data, error } = await supabase.auth.signUp({
+        email: registerEmail,
+        password: registerPassword,
+        options: {
+          data: {
+            user_type: userType,
+            full_name: name,
+            allergies: userType === 'consumer' ? allergies : null,
+            preferences: userType === 'consumer' ? preferences : null,
+          },
+        }
+      });
+      
+      if (error) throw error;
+      
+      // Create profile record in appropriate table
+      const profileTable = userType === 'recruiter' ? 'recruiter_profiles' : 'consumer_profiles';
+      
+      const { error: profileError } = await supabase
+        .from(profileTable)
+        .insert({
+          user_id: data.user?.id,
+          name,
+          email: registerEmail,
+          allergies: userType === 'consumer' ? allergies : null,
+          preferences: userType === 'consumer' ? preferences : null,
+        });
+      
+      if (profileError) throw profileError;
+      
+      toast({
+        title: "Cadastro realizado com sucesso!",
+        description: "Bem-vindo(a) à plataforma SensoryNexus.",
+      });
+      
+      // Redirect based on user type
       if (userType === "recruiter") {
         navigate("/dashboard");
       } else {
         navigate("/consumer-profile");
       }
-    } else {
-      setError("Credenciais inválidas. Tente novamente.");
+      
+    } catch (error: any) {
+      setError(error.message || "Erro ao criar conta. Tente novamente.");
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
-  };
-
-  const handleRegister = (e: React.FormEvent) => {
-    e.preventDefault();
-    toast({
-      title: "Cadastro em progresso",
-      description: "Esta funcionalidade está em desenvolvimento.",
-    });
   };
 
   return (
@@ -192,6 +273,12 @@ export default function Login() {
             <TabsContent value="register">
               <form onSubmit={handleRegister}>
                 <CardContent className="space-y-4">
+                  {error && (
+                    <div className="p-3 bg-destructive/10 text-destructive rounded-lg text-sm animate-fade-in">
+                      {error}
+                    </div>
+                  )}
+                
                   <div className="space-y-2">
                     <Label>Tipo de Usuário</Label>
                     <RadioGroup 
@@ -216,6 +303,8 @@ export default function Login() {
                     type="text"
                     icon={<User className="h-4 w-4" />}
                     placeholder="Digite seu nome completo"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
                     required
                   />
 
@@ -225,6 +314,8 @@ export default function Login() {
                     type="email"
                     icon={<Mail className="h-4 w-4" />}
                     placeholder="seu.email@empresa.com"
+                    value={registerEmail}
+                    onChange={(e) => setRegisterEmail(e.target.value)}
                     required
                   />
 
@@ -237,6 +328,8 @@ export default function Login() {
                         type={showPassword ? "text" : "password"}
                         icon={<Lock className="h-4 w-4" />}
                         placeholder="••••••••"
+                        value={registerPassword}
+                        onChange={(e) => setRegisterPassword(e.target.value)}
                         required
                       />
                       <Button
@@ -265,17 +358,25 @@ export default function Login() {
                         label="Alergias ou Restrições"
                         id="allergies"
                         placeholder="Ex: Glúten, Frutos do mar, Lactose"
+                        value={allergies}
+                        onChange={(e) => setAllergies(e.target.value)}
                       />
                       <InputWithLabel
                         label="Preferências Alimentares"
                         id="preferences"
                         placeholder="Ex: Vegano, Baixo Açúcar, Sem Conservantes"
+                        value={preferences}
+                        onChange={(e) => setPreferences(e.target.value)}
                       />
                     </div>
                   )}
 
                   <div className="flex items-center space-x-2">
-                    <Checkbox id="terms" required />
+                    <Checkbox 
+                      id="terms" 
+                      checked={termsAccepted}
+                      onCheckedChange={(checked) => setTermsAccepted(!!checked)}
+                    />
                     <Label htmlFor="terms" className="text-sm">
                       Concordo com os <Button variant="link" className="h-auto p-0">Termos de Uso</Button> e <Button variant="link" className="h-auto p-0">Política de Privacidade</Button>
                     </Label>
@@ -286,8 +387,9 @@ export default function Login() {
                   <Button 
                     type="submit" 
                     className="w-full"
+                    disabled={isLoading}
                   >
-                    Cadastrar
+                    {isLoading ? "Cadastrando..." : "Cadastrar"}
                   </Button>
                 </CardFooter>
               </form>

@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
-import { Calendar, Clock, BarChart, ChevronRight, Users } from "lucide-react";
+import { Calendar, Clock, BarChart, ChevronRight, Users, ThumbsUp, ThumbsDown } from "lucide-react";
 import { Link } from "react-router-dom";
 
 interface SurveyCardProps {
@@ -14,6 +14,8 @@ interface SurveyCardProps {
   totalResponses?: number;
   targetResponses?: number;
   participantCount?: number;
+  approvedCount?: number;
+  rejectedCount?: number;
   date?: string;
   className?: string;
   imageSrc?: string;
@@ -28,6 +30,8 @@ export function SurveyCard({
   totalResponses = 0,
   targetResponses = 100,
   participantCount,
+  approvedCount = 0,
+  rejectedCount = 0,
   date,
   className,
   onClick
@@ -98,6 +102,20 @@ export function SurveyCard({
               ></div>
             </div>
           </div>
+          
+          {/* Participant approval stats */}
+          {(approvedCount > 0 || rejectedCount > 0) && (
+            <div className="flex justify-between items-center text-sm pt-2">
+              <div className="flex items-center text-green-600">
+                <ThumbsUp className="mr-1 h-4 w-4" />
+                <span>{approvedCount} aprovados</span>
+              </div>
+              <div className="flex items-center text-red-600">
+                <ThumbsDown className="mr-1 h-4 w-4" />
+                <span>{rejectedCount} reprovados</span>
+              </div>
+            </div>
+          )}
         </div>
       </CardContent>
       <CardFooter>

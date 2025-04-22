@@ -19,6 +19,37 @@ import RecruiterProfile from "./pages/RecruiterProfile";
 import ConsumerProfile from "./pages/ConsumerProfile";
 import DeliveryManagement from "./pages/DeliveryManagement";
 import Analytics from "./pages/Analytics";
+import { useState, useEffect } from "react";
+import { supabase } from "./integrations/supabase/client";
+
+// Auth protection component
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data } = await supabase.auth.getSession();
+      setIsAuthenticated(!!data.session);
+    };
+    
+    checkAuth();
+    
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsAuthenticated(!!session);
+    });
+    
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
+  
+  if (isAuthenticated === null) {
+    // Loading state
+    return <div className="flex h-screen items-center justify-center">Carregando...</div>;
+  }
+  
+  return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
+};
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -36,21 +67,24 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/surveys" element={<Surveys />} />
-          <Route path="/surveys/create" element={<SurveyCreate />} />
-          <Route path="/surveys/:id" element={<SurveyDetail />} />
-          <Route path="/scheduling" element={<Scheduling />} />
-          <Route path="/scheduling/create" element={<SchedulingCreate />} />
-          <Route path="/scheduling/:id" element={<SchedulingDetail />} />
-          <Route path="/scheduling/:id/preview" element={<SchedulingPreview />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/recruiter-profile" element={<RecruiterProfile />} />
-          <Route path="/consumer-profile" element={<ConsumerProfile />} />
-          <Route path="/delivery-management" element={<DeliveryManagement />} />
-          <Route path="/analytics" element={<Analytics />} />
+          
+          {/* Protected routes */}
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/surveys" element={<ProtectedRoute><Surveys /></ProtectedRoute>} />
+          <Route path="/surveys/create" element={<ProtectedRoute><SurveyCreate /></ProtectedRoute>} />
+          <Route path="/surveys/:id" element={<ProtectedRoute><SurveyDetail /></ProtectedRoute>} />
+          <Route path="/scheduling" element={<ProtectedRoute><Scheduling /></ProtectedRoute>} />
+          <Route path="/scheduling/create" element={<ProtectedRoute><SchedulingCreate /></ProtectedRoute>} />
+          <Route path="/scheduling/:id" element={<ProtectedRoute><SchedulingDetail /></ProtectedRoute>} />
+          <Route path="/scheduling/:id/preview" element={<ProtectedRoute><SchedulingPreview /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+          <Route path="/recruiter-profile" element={<ProtectedRoute><RecruiterProfile /></ProtectedRoute>} />
+          <Route path="/consumer-profile" element={<ProtectedRoute><ConsumerProfile /></ProtectedRoute>} />
+          <Route path="/delivery-management" element={<ProtectedRoute><DeliveryManagement /></ProtectedRoute>} />
+          <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+          
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

@@ -7,8 +7,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/components/ui/use-toast";
-import { User, Star, Calendar, Clock, Award, Gift, ChartBar } from "lucide-react";
+import { User, Star, Calendar, Clock, Award, Gift, ChartBar, Package } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { SampleDeliveryConfirmation } from "@/components/delivery/SampleDeliveryConfirmation";
 
 // Medallion levels for consumer profiles
 const LEVELS = [
@@ -32,6 +33,7 @@ export default function ConsumerProfile() {
     preferences: "Produtos veganos, Baixo açúcar",
     memberSince: "Janeiro 2023"
   });
+  const [pendingDeliveries, setPendingDeliveries] = useState<any[]>([]);
   
   // Consumer achievements
   const achievements = [
@@ -73,6 +75,7 @@ export default function ConsumerProfile() {
       date: "15/04/2023",
       points: 35,
       status: "completed",
+      approved: true,
       feedback: "Suas respostas foram muito detalhadas e úteis!"
     },
     {
@@ -81,6 +84,7 @@ export default function ConsumerProfile() {
       date: "02/05/2023",
       points: 45,
       status: "completed",
+      approved: true,
       feedback: "Excelente participação. Seu feedback foi valioso!"
     },
     {
@@ -89,7 +93,8 @@ export default function ConsumerProfile() {
       date: "18/05/2023",
       points: 30,
       status: "completed",
-      feedback: "Obrigado pela participação."
+      approved: false,
+      feedback: "Algumas respostas não atenderam aos critérios da pesquisa."
     },
     {
       id: "s-4",
@@ -97,6 +102,7 @@ export default function ConsumerProfile() {
       date: "15/06/2023",
       points: null,
       status: "in-transit",
+      approved: null,
       feedback: null
     }
   ];
@@ -177,18 +183,58 @@ export default function ConsumerProfile() {
     });
   };
 
-  // Load profile data from Supabase (example function)
+  // Load profile data and pending deliveries from Supabase
   const loadProfileData = async () => {
     try {
-      // TODO: Replace with actual Supabase query when table is set up
-      // const { data, error } = await supabase
-      //   .from('consumer_profiles')
-      //   .select('*')
-      //   .eq('user_id', userId)
-      //   .single();
+      // Get user session
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData.session?.user.id;
       
-      // if (error) throw error;
-      // if (data) setProfile(data);
+      if (!userId) return;
+      
+      // Get profile data
+      const { data: profileData, error: profileError } = await supabase
+        .from('consumer_profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+      
+      if (profileError) throw profileError;
+      if (profileData) {
+        setProfile(prev => ({
+          ...prev,
+          name: profileData.name || prev.name,
+          email: profileData.email || prev.email,
+          points: profileData.points || prev.points,
+          completedSurveys: profileData.completed_surveys || prev.completedSurveys,
+          location: profileData.location || prev.location,
+          allergies: profileData.allergies || prev.allergies,
+          preferences: profileData.preferences || prev.preferences,
+          memberSince: profileData.created_at 
+            ? new Date(profileData.created_at).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+            : prev.memberSince
+        }));
+      }
+      
+      // Get pending deliveries
+      const { data: deliveries, error: deliveriesError } = await supabase
+        .from('sample_deliveries')
+        .select(`
+          id,
+          code,
+          name,
+          status,
+          surveys(id, title)
+        `)
+        .eq('consumer_id', userId)
+        .in('status', ['shipped', 'in-transit']);
+      
+      if (deliveriesError) throw deliveriesError;
+      
+      if (deliveries && deliveries.length > 0) {
+        setPendingDeliveries(deliveries);
+      }
+      
     } catch (error) {
       console.error("Error loading profile:", error);
     }
@@ -196,6 +242,26 @@ export default function ConsumerProfile() {
 
   useEffect(() => {
     loadProfileData();
+    
+    // Set up subscription for real-time updates
+    const deliveriesSubscription = supabase
+      .channel('profile-delivery-updates')
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'sample_deliveries',
+          filter: `consumer_id=eq.${supabase.auth.getSession().then(res => res.data.session?.user.id)}` 
+        },
+        () => {
+          loadProfileData();
+        }
+      )
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(deliveriesSubscription);
+    };
   }, []);
 
   // Render helper for status badges
@@ -214,6 +280,14 @@ export default function ConsumerProfile() {
     }
   };
 
+  const renderApprovalBadge = (approved: boolean | null) => {
+    if (approved === null) return null;
+    
+    return approved 
+      ? <Badge className="ml-2 bg-green-600">Aprovado</Badge>
+      : <Badge className="ml-2 bg-red-600">Reprovado</Badge>;
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Navbar />
@@ -223,6 +297,30 @@ export default function ConsumerProfile() {
           <h1 className="text-3xl font-bold font-display">Perfil do Consumidor</h1>
           <p className="text-muted-foreground">Gerencie seu perfil e visualize seu histórico de pesquisas</p>
         </div>
+
+        {/* Pending Deliveries Alert (if any) */}
+        {pendingDeliveries.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+              <Package className="text-primary" />
+              <span>Amostras em Trânsito</span>
+              <Badge className="ml-2 bg-yellow-500">{pendingDeliveries.length}</Badge>
+            </h2>
+            
+            <div className="grid gap-4 md:grid-cols-2">
+              {pendingDeliveries.map((delivery) => (
+                <SampleDeliveryConfirmation
+                  key={delivery.id}
+                  sampleId={delivery.id}
+                  name={delivery.name || delivery.surveys.title}
+                  status={delivery.status}
+                  code={delivery.code}
+                  surveyId={delivery.surveys.id}
+                />
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="grid md:grid-cols-[240px_1fr] gap-8">
           <div className="space-y-6">
@@ -386,6 +484,7 @@ export default function ConsumerProfile() {
                           </div>
                           <div className="flex items-center gap-2">
                             {renderStatusBadge(survey.status)}
+                            {renderApprovalBadge(survey.approved)}
                             {survey.points && (
                               <Badge variant="outline" className="ml-2">
                                 +{survey.points} pontos

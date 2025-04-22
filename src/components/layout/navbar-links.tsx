@@ -1,25 +1,35 @@
 
-import { UserCircle, LayoutDashboard, BarChartHorizontal, CalendarDays } from "lucide-react";
+import { CalendarCheck, LayoutDashboard, ClipboardList, Send, BarChartHorizontal, UserCog, Package } from "lucide-react";
 
 export const navLinks = [
   {
     title: "Dashboard",
     href: "/dashboard",
-    icon: LayoutDashboard
+    icon: LayoutDashboard,
   },
   {
     title: "Pesquisas",
     href: "/surveys",
-    icon: BarChartHorizontal
+    icon: ClipboardList,
   },
   {
     title: "Agendamentos",
     href: "/scheduling",
-    icon: CalendarDays
+    icon: CalendarCheck,
   },
   {
-    title: "Perfil do Recrutador",
+    title: "Entregas",
+    href: "/delivery-management",
+    icon: Package,
+  },
+  {
+    title: "Análises",
+    href: "/analytics",
+    icon: BarChartHorizontal,
+  },
+  {
+    title: "Perfil",
     href: "/recruiter-profile",
-    icon: UserCircle
-  }
+    icon: UserCog,
+  },
 ];
