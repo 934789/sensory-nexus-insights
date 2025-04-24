@@ -30,7 +30,10 @@ export default function AdminUserSetup() {
       const { error: roleErr } = await supabase.rpc('add_user_role', {
         user_id_param: userId,
         role_param: 'admin'
-      } as any); // Use type assertion to bypass TypeScript error
+      } as {
+        user_id_param: string;
+        role_param: string;
+      });
       
       if (roleErr) throw roleErr;
       
@@ -38,7 +41,10 @@ export default function AdminUserSetup() {
       const { error: recruiterRoleErr } = await supabase.rpc('add_user_role', {
         user_id_param: userId,
         role_param: 'recruiter'
-      } as any); // Use type assertion to bypass TypeScript error
+      } as {
+        user_id_param: string;
+        role_param: string;
+      });
       
       if (recruiterRoleErr) throw recruiterRoleErr;
 
