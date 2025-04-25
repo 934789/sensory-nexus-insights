@@ -25,26 +25,20 @@ export default function AdminUserSetup() {
       const userId = data.user?.id;
       if (!userId) throw new Error("Não foi possível obter o ID do usuário");
 
-      // Inserir diretamente no banco de dados usando função rpc para contornar as políticas RLS
-      // Isso evita o problema de recursão infinita
-      const { error: roleErr } = await supabase.rpc(
-        'add_user_role' as any, 
-        {
-          user_id_param: userId,
-          role_param: 'admin'
-        }
-      );
+      // Inserir diretamente no banco de dados usando função rpc
+      // Usando type assertion para lidar com o erro de TypeScript
+      const { error: roleErr } = await supabase.rpc('add_user_role' as any, {
+        user_id_param: userId,
+        role_param: 'admin'
+      });
       
       if (roleErr) throw roleErr;
       
       // Adicionar também papel de recrutador
-      const { error: recruiterRoleErr } = await supabase.rpc(
-        'add_user_role' as any, 
-        {
-          user_id_param: userId,
-          role_param: 'recruiter'
-        }
-      );
+      const { error: recruiterRoleErr } = await supabase.rpc('add_user_role' as any, {
+        user_id_param: userId,
+        role_param: 'recruiter'
+      });
       
       if (recruiterRoleErr) throw recruiterRoleErr;
 

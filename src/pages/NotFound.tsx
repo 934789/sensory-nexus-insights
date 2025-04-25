@@ -12,12 +12,24 @@ export default function NotFound() {
         <p className="text-muted-foreground">
           A página que você está procurando não existe ou foi removida.
         </p>
-        <Button asChild className="flex items-center gap-2 mx-auto">
-          <Link to="/dashboard">
-            <ChevronLeft className="h-4 w-4" />
-            Voltar para o Dashboard
-          </Link>
-        </Button>
+        <div className="flex flex-col gap-2">
+          <Button asChild className="flex items-center gap-2 mx-auto">
+            <Link to="/dashboard">
+              <ChevronLeft className="h-4 w-4" />
+              Voltar para o Dashboard
+            </Link>
+          </Button>
+          <Button asChild variant="outline" className="flex items-center gap-2 mx-auto">
+            <Link to="/admin-setup">
+              Configurar Usuário Admin
+            </Link>
+          </Button>
+          <Button asChild variant="link" className="flex items-center gap-2 mx-auto">
+            <Link to="/login">
+              Ir para Login
+            </Link>
+          </Button>
+        </div>
       </div>
     </div>
   );
