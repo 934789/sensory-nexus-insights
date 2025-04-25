@@ -19,38 +19,58 @@ export default function AdminUserSetup() {
     setLoading(true);
 
     try {
-      // Registrar usuário
-      const { data, error } = await supabase.auth.signUp({ email, password });
-      if (error) throw error;
+      console.log("Iniciando criação de usuário admin");
+      
+      // Primeiro, tenta criar o usuário
+      const { data, error } = await supabase.auth.signUp({ 
+        email, 
+        password,
+        options: {
+          data: {
+            user_type: 'admin'
+          }
+        }
+      });
+
+      console.log("Resultado da criação de usuário:", { data, error });
+      
+      if (error) {
+        console.error("Erro detalhado:", error);
+        throw error;
+      }
+
       const userId = data.user?.id;
       if (!userId) throw new Error("Não foi possível obter o ID do usuário");
 
-      // Inserir diretamente no banco de dados usando função rpc
-      // Usando type assertion para lidar com o erro de TypeScript
-      const { error: roleErr } = await supabase.rpc('add_user_role' as any, {
-        user_id_param: userId,
-        role_param: 'admin'
-      });
-      
-      if (roleErr) throw roleErr;
-      
-      // Adicionar também papel de recrutador
-      const { error: recruiterRoleErr } = await supabase.rpc('add_user_role' as any, {
-        user_id_param: userId,
-        role_param: 'recruiter'
-      });
-      
-      if (recruiterRoleErr) throw recruiterRoleErr;
+      // Adicionar papéis de admin e recrutador
+      const roles = ['admin', 'recruiter'];
+      for (const role of roles) {
+        console.log(`Adicionando papel: ${role}`);
+        const { error: roleErr } = await supabase.rpc('add_user_role' as any, {
+          user_id_param: userId,
+          role_param: role
+        });
+        
+        if (roleErr) {
+          console.error(`Erro ao adicionar papel ${role}:`, roleErr);
+          throw roleErr;
+        }
+      }
 
       toast({
         title: "Conta admin criada com sucesso!",
         description: "Você pode fazer login com admin@sensorytest.com",
       });
+      
       setTimeout(() => navigate("/login"), 1200);
     } catch (err: any) {
+      console.error("Erro completo:", err);
+      
+      const errorMessage = err.message || "Erro desconhecido ao criar conta admin";
+      
       toast({
         title: "Erro ao criar conta admin",
-        description: err.message,
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
