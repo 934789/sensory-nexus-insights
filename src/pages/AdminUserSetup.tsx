@@ -8,8 +8,8 @@ import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
 
 export default function AdminUserSetup() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("admin@sensorytest.com");
+  const [password, setPassword] = useState("SensoryAdmin2024!");
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -50,7 +50,7 @@ export default function AdminUserSetup() {
 
       toast({
         title: "Conta admin criada com sucesso!",
-        description: "Você já pode fazer login como admin.",
+        description: "Você pode fazer login com admin@sensorytest.com",
       });
       setTimeout(() => navigate("/login"), 1200);
     } catch (err: any) {
@@ -74,7 +74,7 @@ export default function AdminUserSetup() {
               label="E-mail"
               id="admin-email"
               type="email"
-              placeholder="admin@exemplo.com"
+              placeholder="admin@sensorytest.com"
               value={email}
               onChange={e => setEmail(e.target.value)}
               required
